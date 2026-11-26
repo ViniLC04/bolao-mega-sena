@@ -13,6 +13,7 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 6 | Política de senha do Supabase | — | **Fase 0, teste 3** |
 | 7 | Reconciliação da regra de rateio com o texto da Caixa (SPEC 8.4) | — | aberto (ver `docs/rateio.md` quando existir) |
 | 8 | API comunitária de reserva (resultadomega, guidi) | — | **Fase 0, teste 1** |
+| 9 | Lista oficial de Viradas para o filtro "só Viradas" (a planilha tem sorteios em 31/12 desde 1998 e a coluna "Acumulado Virada" não identifica Virada) | lista editável de concursos-Virada | aberto (achado no teste 4) |
 
 ## Premissas
 - Uso oficial da Caixa com 1 recibo por cota; sem tarifa de 35%.
