@@ -209,6 +209,79 @@ export function monteCarlo(jogos: readonly (readonly number[])[], opcoes: Opcoes
   return resumir('aproximado', total, s6, s5, s4)
 }
 
+export interface ResultadoGrupos {
+  /** um resultado para cada grupo (cada recibo), na ordem recebida */
+  porGrupo: ResultadoProbabilidades[]
+  /** o bolão inteiro (todos os jogos de todos os grupos juntos) */
+  total: ResultadoProbabilidades
+}
+
+/**
+ * 7: chance de "pelo menos uma quina/quadra" POR RECIBO e do BOLÃO INTEIRO, na mesma passada de sorteios.
+ * `grupos[i]` = os jogos do recibo i. Rótulo: APROXIMADO.
+ */
+export function monteCarloGrupos(grupos: readonly (readonly (readonly number[])[])[], opcoes: OpcoesMonteCarlo = {}): ResultadoGrupos {
+  const sorteios = opcoes.sorteios ?? 2_000_000
+  const rng = opcoes.rng ?? Math.random
+  const lo: number[] = []
+  const hi: number[] = []
+  const grp: number[] = []
+  grupos.forEach((jogos, gi) => {
+    for (const j of jogos) {
+      const [l, h] = mascara(j)
+      lo.push(l)
+      hi.push(h)
+      grp.push(gi)
+    }
+  })
+  const ng = grupos.length
+  const n = lo.length
+  const c6 = new Array<number>(ng).fill(0)
+  const c5 = new Array<number>(ng).fill(0)
+  const c4 = new Array<number>(ng).fill(0)
+  let t6 = 0
+  let t5 = 0
+  let t4 = 0
+  const melhorDoGrupo = new Array<number>(ng).fill(0)
+  const passo = Math.max(1, Math.floor(sorteios / 100))
+  const pool = Array.from({ length: DEZENAS_UNIVERSO }, (_, i) => i + 1)
+
+  for (let s = 0; s < sorteios; s++) {
+    let dLo = 0
+    let dHi = 0
+    for (let i = 0; i < DEZENAS_SORTEADAS; i++) {
+      const j = i + Math.floor(rng() * (DEZENAS_UNIVERSO - i))
+      const t = pool[i]
+      pool[i] = pool[j]
+      pool[j] = t
+      const d = pool[i]
+      if (d <= 30) dLo |= 1 << (d - 1)
+      else dHi |= 1 << (d - 31)
+    }
+    melhorDoGrupo.fill(0)
+    for (let j = 0; j < n; j++) {
+      const h = bits(lo[j] & dLo) + bits(hi[j] & dHi)
+      if (h > melhorDoGrupo[grp[j]]) melhorDoGrupo[grp[j]] = h
+    }
+    let geral = 0
+    for (let g = 0; g < ng; g++) {
+      const m = melhorDoGrupo[g]
+      if (m > geral) geral = m
+      if (m === 6) c6[g]++
+      if (m >= 5) c5[g]++
+      if (m >= 4) c4[g]++
+    }
+    if (geral === 6) t6++
+    if (geral >= 5) t5++
+    if (geral >= 4) t4++
+    if (opcoes.onProgresso && (s + 1) % passo === 0) opcoes.onProgresso((s + 1) / sorteios)
+  }
+  return {
+    porGrupo: grupos.map((_, g) => resumir('aproximado', sorteios, c6[g], c5[g], c4[g])),
+    total: resumir('aproximado', sorteios, t6, t5, t4),
+  }
+}
+
 export interface OpcoesEnumeracao {
   /** chamado com a fração concluída (0 a 1) */
   onProgresso?: (fracao: number) => void

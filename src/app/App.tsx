@@ -7,6 +7,7 @@ import { EmConstrucao } from './paginas/EmConstrucao'
 import { Login } from './paginas/Login'
 import { Painel } from './paginas/Painel'
 import { Regras } from './paginas/Regras'
+import { Simulador } from './paginas/Simulador'
 import { RegrasProvider } from './regras'
 
 /** Só deixa passar quem está logado E é o ADM; os demais vão para o login. */
@@ -40,7 +41,7 @@ export function App() {
           <Route element={<RotaAdm />}>
             <Route index element={<Painel />} />
             <Route path="regras" element={<Regras />} />
-            <Route path="simulador" element={<EmConstrucao titulo="Simulador" etapa="Etapa 4" />} />
+            <Route path="simulador" element={<Simulador />} />
             <Route path="concursos" element={<EmConstrucao titulo="Concursos" etapa="Etapa 5" />} />
             <Route path="gerador" element={<EmConstrucao titulo="Gerador de jogos" etapa="Etapa 6" />} />
             <Route path="boloes" element={<EmConstrucao titulo="Bolões" etapa="Etapa 7" />} />

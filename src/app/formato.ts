@@ -50,6 +50,13 @@ export function parsePercentual(texto: string): number | null {
   return Number(m[1]) * 100 + Number((m[2] ?? '').padEnd(2, '0') || '0')
 }
 
+/** Probabilidade (fração) → "2,58%". Valores minúsculos viram "menos de 0,001%". */
+export function formatarPct(p: number, casas = 2): string {
+  const pct = p * 100
+  if (pct > 0 && pct < 10 ** -casas) return `menos de ${(10 ** -casas).toFixed(casas).replace('.', ',')}%`
+  return `${pct.toFixed(casas).replace('.', ',')}%`
+}
+
 /** "2026-12-31" → "31/12/2026" */
 export function formatarDataIso(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)

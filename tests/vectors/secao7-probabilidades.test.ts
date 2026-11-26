@@ -8,6 +8,7 @@ import {
   enumeracaoExata,
   monteCarlo,
   monteCarloComSemente,
+  monteCarloGrupos,
   probabilidadeSena,
   rankCombinacao,
 } from '../../src/engine/probabilidades'
@@ -139,6 +140,38 @@ describe('Monte Carlo (≥ 2 milhões de sorteios, rótulo aproximado)', () => {
     expect(marcas.length).toBe(100)
     expect(marcas[marcas.length - 1]).toBe(1)
     expect([...marcas].sort((x, y) => x - y)).toEqual(marcas)
+  })
+})
+
+describe('Monte Carlo por recibo e do bolão inteiro (mesma passada)', () => {
+  it('com um grupo só, dá exatamente o mesmo que o Monte Carlo comum (mesma semente)', () => {
+    const rng = criarRng(21)
+    const jogos = Array.from({ length: 12 }, () => sortearDezenas(rng, 7))
+    const comum = monteCarlo(jogos, { sorteios: 300_000, rng: criarRng(5) })
+    const grupos = monteCarloGrupos([jogos], { sorteios: 300_000, rng: criarRng(5) })
+    expect(grupos.total).toEqual(comum)
+    expect(grupos.porGrupo[0]).toEqual(comum)
+  })
+
+  it('o bolão inteiro é pelo menos tão provável quanto qualquer recibo, e não passa da soma deles', () => {
+    const rng = criarRng(22)
+    const r1 = Array.from({ length: 7 }, () => sortearDezenas(rng, 7))
+    const r2 = Array.from({ length: 10 }, () => sortearDezenas(rng, 8))
+    const r = monteCarloGrupos([r1, r2], { sorteios: 400_000, rng: criarRng(9) })
+    expect(r.porGrupo.length).toBe(2)
+    for (const g of r.porGrupo) {
+      expect(r.total.quadra.p).toBeGreaterThanOrEqual(g.quadra.p)
+      expect(g.tipo).toBe('aproximado')
+    }
+    expect(r.total.quadra.p).toBeLessThanOrEqual(r.porGrupo[0].quadra.p + r.porGrupo[1].quadra.p + 1e-12)
+    // jogos maiores concentram mais chance de quadra: 10 jogos de 8 dezenas > 7 jogos de 7 dezenas
+    expect(r.porGrupo[1].quadra.p).toBeGreaterThan(r.porGrupo[0].quadra.p)
+  })
+
+  it('informa progresso de 0 a 1', () => {
+    const marcas: number[] = []
+    monteCarloGrupos([[[1, 2, 3, 4, 5, 6]]], { sorteios: 100_000, rng: criarRng(1), onProgresso: (f) => marcas.push(f) })
+    expect(marcas[marcas.length - 1]).toBe(1)
   })
 })
 

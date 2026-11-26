@@ -7,6 +7,7 @@ import {
   formatarDataHoraSP,
   formatarDataIso,
   formatarInteiro,
+  formatarPct,
   formatarReais,
   formatarReaisCampo,
   hojeIsoSP,
@@ -57,6 +58,16 @@ describe('percentuais em pontos-base', () => {
   })
   it('ida e volta', () => {
     for (const bp of [0, 1, 500, 2500, 4379, 9000, 10000]) expect(parsePercentual(formatarBp(bp))).toBe(bp)
+  })
+})
+
+describe('probabilidades na tela', () => {
+  it('formata em % com vírgula', () => {
+    expect(formatarPct(0.0258)).toBe('2,58%')
+    expect(formatarPct(0.5)).toBe('50,00%')
+    expect(formatarPct(0.0258, 1)).toBe('2,6%')
+    expect(formatarPct(0)).toBe('0,00%')
+    expect(formatarPct(0.0000001)).toBe('menos de 0,01%')
   })
 })
 
