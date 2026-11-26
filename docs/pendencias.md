@@ -22,6 +22,13 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 11 | "A partir de N=9 todos os totais são múltiplos de R$ 42" | não vale com 13 ou 20 dezenas (só se o nº de jogos for múltiplo de 7) | SPEC e teste corrigidos |
 | 12 | N=64: cota 7,88 sem asterisco | 504/64 = 7,875 → tem centavo quebrado | asterisco acrescentado; o motor avisa (`avisoCentavos`) |
 
+## Premissas adotadas na Fase 1 (simulador)
+| # | Premissa | Onde mudar |
+|---|---|---|
+| 13 | Modo "inverso": para cada N de 2 a 100, o melhor gasto ≤ orçamento; destaca o maior N viável (o SPEC era vago) | `simularInverso` em `src/engine/simulador.ts` |
+| 14 | Perfis do modo "por valor" (entre as composições de gasto máximo): *menos recibos* = menos recibos, depois menos jogos; *mais dezenas* = maiores k primeiro; *mais jogos* = mais jogos no total | `comparar` em `src/engine/simulador.ts` |
+| 15 | "Sobra" dos vetores do SPEC = orçamento − gasto (R$ 24 / R$ 26). Em **cota fixa** ela vai para a caixinha; em **cota-teto** cobra-se `gasto/N` arredondado e a caixinha é só o arredondamento | campos `sobraOrcamentoCent` e `caixinhaCent` |
+
 ## Premissas
 - Uso oficial da Caixa com 1 recibo por cota; sem tarifa de 35%.
 - "Máx. N iguais" vale entre todos os jogos do concurso.

@@ -17,3 +17,12 @@ export function combinacoes(n: number, k: number): number {
 
 /** Total de combinações da Mega-Sena: C(60,6) = 50.063.860. */
 export const TOTAL_COMBINACOES = combinacoes(DEZENAS_UNIVERSO, DEZENAS_SORTEADAS)
+
+/**
+ * "1 em quantos": chance de sena de quem cobre `combinacoesDistintas` combinações de 6 dezenas.
+ * Ex.: 329 combinações → 1 em 152.170 (SPEC seção 7).
+ */
+export function umEm(combinacoesDistintas: number): number {
+  if (!(combinacoesDistintas > 0)) return Infinity
+  return Math.round(TOTAL_COMBINACOES / combinacoesDistintas)
+}

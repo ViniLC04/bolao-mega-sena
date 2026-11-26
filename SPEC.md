@@ -116,13 +116,13 @@ Três modos, todos com a tabela "composição → gasto, sobra, cota final, jogo
 
 1. **Por número de cotas** (4.3).
 2. **Por valor**: entrada N e `cota_base` (ou arrecadação `B = N × cota_base`). Busca as combinações de até `limite_recibos_simulador` recibos, cada um válido para N (4.2), com `soma ≤ B`, maximizando o gasto. Perfis: *menos recibos*, *mais dezenas*, *mais jogos*. Modo de cobrança: **cota fixa** (sobra → caixinha) ou **cota-teto** (cobra `gasto/N` arredondado para cima).
-3. **Inverso**: dado um orçamento, quantas cotas cabem respeitando 700×N por recibo e N ≤ 100.
+3. **Inverso**: dado um orçamento, quantas cotas cabem respeitando 700×N por recibo e N ≤ 100. **[PREMISSA adotada na Fase 1]**: para cada N de 2 a 100, mostra o melhor gasto ≤ orçamento (com a composição e a cota) e destaca o maior N viável.
 
 **Vetores de teste (por valor):**
 - N=24, cota-base R$50 → B=R$1.200; 1 recibo: 7×8dez = R$1.176 (cota 49,00; sobra R$24).
 - N=20, cota-base R$100 → B=R$2.000; gasto máximo **R$1.974** (47 × R$42), sobra R$26, cota final 98,70; 329 apostas equivalentes. Ex.: 2 recibos (7×7dez + 10×8dez), cotas 14,70 + 84,00.
 - N=32, cota-base R$42 → R$1.344 sem sobra (ex.: 8×8dez).
-- Cota-base R$42 fecha sem sobra de 5 a 54 cotas; R$84 fecha para qualquer N; R$50 só fecha em N=3,6,21,42,84 (até 4 recibos, N≥9 só múltiplos de 42).
+- Cota-base R$42 fecha sem sobra de 5 a 54 cotas (conferido na Fase 1: fecha também em 2, 3 e 4 e em todos os N pares de 56 a 100); R$84 fecha para qualquer N; R$50 só fecha em N=3,6,21,42,84 (até 4 recibos, N≥9 só múltiplos de 42).
 - Invariante: cada R$6 compra uma combinação, qualquer que seja k; logo a chance total depende só do gasto.
 
 Requisito: o simulador usa programação dinâmica sobre os totais possíveis (todos múltiplos de 600 centavos), não força bruta.
