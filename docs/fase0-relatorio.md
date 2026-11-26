@@ -1,11 +1,21 @@
 # Fase 0 — Relatório dos testes de viabilidade (SPEC 9.3)
 
-Status: **2 de 4 concluídos, 2 parciais (falta só o teste de visitante fora do Brasil).**
+Status: **Fase 0 encerrada em 26/11/2026.** 4 testes feitos; um único ponto **não testado** (visitante fora do Brasil, ver "Risco conhecido").
 
 | # | Teste | Status | Decisão |
 |---|---|---|---|
-| 1 | A Caixa responde ao navegador (CORS) e a visitantes de fora do Brasil? | **parcial**: Brasil OK; falta testar de fora do Brasil e por celular | provisória: plano A (navegador do visitante) |
-| 2 | Intermediário (Cloudflare Worker ou equivalente) fala com a Caixa a partir do Brasil? | **parcial**: Worker fala com a Caixa a partir de data centers do Brasil (GIG, GRU) | provisória: plano B = Cloudflare Worker (falta confirmar o caso de visitante no exterior) |
+| 1 | A Caixa responde ao navegador (CORS) e a visitantes de fora do Brasil? | **concluído para o Brasil** (computador e celular 4G); exterior **não testado** | **Plano A: o navegador do visitante consulta a Caixa por número.** Funciona com CORS livre |
+| 2 | Intermediário (Cloudflare Worker ou equivalente) fala com a Caixa a partir do Brasil? | **concluído para o Brasil** (data centers GIG e GRU) | **Plano B: Cloudflare Worker** que só aceita número de concurso. Plano C: planilha |
+
+### Risco conhecido (não testado)
+Não foi possível testar um visitante **fora do Brasil**. Se a Caixa recusar IPs do exterior, o botão "Atualizar" falha para esse visitante. Mitigação já prevista no SPEC 9.2: mensagem clara + plano B (Worker forçado na região de São Paulo, `spikes/worker/wrangler-br.toml`, já publicado e testado do Brasil) + plano C (planilha). Como o ADM e quem atualiza a lista estarão no Brasil, o impacto prático é baixo. **Reavaliar** quando algum participante no exterior abrir o app: a página `https://bolao-spike-caixa.pages.dev` continua no ar para esse teste.
+
+### Decisões de projeto resultantes
+1. Fonte principal dos concursos: Caixa, pelo navegador, por número (último + 1, +2…); HTTP 500 = fim da lista.
+2. 2ª fonte de conferência: **resultadomega** (CORS livre). **guidi descartada** no navegador (sem CORS).
+3. Banco e autenticação: **Supabase, região São Paulo**, chaves novas (`sb_publishable`, `sb_secret`).
+4. Importação da planilha oficial: leitor próprio, carga inicial de 3.086 concursos; a Caixa já está 4 concursos à frente (3090).
+5. Neste computador: usar `npm.cmd`/`npx.cmd` e `NODE_USE_SYSTEM_CA=1` (proxy Zscaler).
 | 3 | Política de senha e RLS no Supabase | **concluído (26/11/2026)** | **Supabase atende: senha forte imposta pelo servidor, cadastro público desligado, público não lê nomes** |
 | 4 | Importação da planilha oficial | **concluído (26/11/2026)** | **Usar a planilha como carga inicial do banco: SIM** |
 

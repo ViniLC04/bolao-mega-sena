@@ -9,10 +9,10 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 2 | Isenção de IR em prêmios pequenos | `ir_valor_isento` (padrão 0) | aberto |
 | 3 | Máximo de cotas por quantidade de dezenas (usar total ÷ R$ 7, ≤ 100) | `bolao_cota_minima`, `bolao_cotas_max` | aberto |
 | 4 | Horário final das apostas (31/12/2026 22h, a confirmar no app da Caixa) | `data_limite_aposta` | aberto |
-| 5 | CORS/IP da Caixa a partir do navegador | — | **Fase 0, teste 1** |
+| 5 | CORS/IP da Caixa a partir do navegador | — | **resolvido para o Brasil** (CORS livre); **visitante no exterior não testado**, ver `docs/fase0-relatorio.md` |
 | 6 | Política de senha do Supabase | — | **resolvido (Fase 0, teste 3)**: servidor exige maiúscula, minúscula, número e símbolo; mínimo 8 |
 | 7 | Reconciliação da regra de rateio com o texto da Caixa (SPEC 8.4) | — | aberto (ver `docs/rateio.md` quando existir) |
-| 8 | API comunitária de reserva (resultadomega, guidi) | — | **Fase 0, teste 1** |
+| 8 | API comunitária de reserva (resultadomega, guidi) | — | **resolvido**: resultadomega funciona no navegador (CORS livre); guidi descartada (sem CORS). resultadomega é projeto novo de uma pessoa: manter marcada "não oficial" |
 | 9 | Lista oficial de Viradas para o filtro "só Viradas" (a planilha tem sorteios em 31/12 desde 1998 e a coluna "Acumulado Virada" não identifica Virada) | lista editável de concursos-Virada | aberto (achado no teste 4) |
 
 ## Premissas

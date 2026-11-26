@@ -217,13 +217,15 @@ Origem **direta da Caixa**; **sem job automático**. Botão **"Atualizar lista d
 3. Política de senha e RLS no Supabase (seção 11).
 4. Importação da planilha oficial.
 
+**Resultado (26/11/2026):** ver `docs/fase0-relatorio.md`. Resumo: (1) Caixa responde ao navegador no Brasil, com CORS livre (`*`), de computador e celular em 4G; **visitante fora do Brasil não foi testado** (risco conhecido); (2) Worker da Cloudflare consegue consultar a Caixa a partir de data centers do Brasil; (3) Supabase atende senha e RLS; (4) planilha importa com leitor próprio (`src/data/planilha.ts`), pois bibliotecas comuns de Excel não leem o arquivo da Caixa.
+
 ### 9.4 Fontes
 | Fonte | Uso | Observações |
 |---|---|---|
 | Caixa `https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/{n}` | principal (oficial) | bloqueia IP de datacenter fora do Brasil; funciona no navegador no Brasil |
 | Planilha oficial `Mega-Sena.xlsx` | importação ADM | 3.086 concursos (1→3086, 15/11/2026), sem lacunas/duplicatas |
 | `https://resultadomega.com.br/api/ultimo.json` (`concursos.json`, `proximo.json`) | conferência/reserva (marcada não oficial) | CORS livre, projeto novo de uma pessoa |
-| `https://api.guidi.dev.br/loteria/megasena/ultimo` ou `/{n}` | segunda leitura pelo navegador | só IP do Brasil, com rate limit |
+| `https://api.guidi.dev.br/loteria/megasena/ultimo` ou `/{n}` | **descartada para uso no navegador** | só IP do Brasil, com rate limit; **não envia CORS**, o navegador bloqueia (Fase 0, teste 1, 26/11/2026). Só serviria lida pelo servidor |
 | `https://valorfinal.com.br/dados/loterias/megasena.csv` | histórico de reserva (só sorteios) | CC BY 4.0 — citar ValorFinal e Caixa na tela "Fontes" |
 
 ### 9.5 Mapeamento dos campos
