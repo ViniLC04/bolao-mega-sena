@@ -81,7 +81,7 @@ Total de combinações da Mega-Sena: **C(60,6) = 50.063.860**.
 ### 4.2 Totais possíveis de um recibo
 `T(k,g) = preco(k) × g`, com `1 ≤ g ≤ 10`. Um recibo é válido para N cotas quando:
 `2 ≤ N ≤ 100`, `T ≥ 1800` e `T / N ≥ 700 centavos`.
-Fato derivado: jogos de 6 dezenas só servem até N=8 (10 jogos = R$60); a partir de N=9 todos os totais são múltiplos de R$ 42.
+Fato derivado: jogos de 6 dezenas só servem até N=8 (10 jogos = R$60); a partir de N=9 os totais são múltiplos de R$ 42, **exceto** com 13 ou 20 dezenas (C(13,6) e C(20,6) não têm fator 7): aí só quando o nº de jogos é múltiplo de 7.
 
 ### 4.3 Valor mínimo para N cotas (um recibo)
 `Piso(N) = max(1800, 700×N)`; `Tmin(N) = menor T(k,g) ≥ Piso(N)`; desempate: menor total, depois menor k.
@@ -96,7 +96,7 @@ Fato derivado: jogos de 6 dezenas só servem até N=8 (10 jogos = R$60); a parti
 | 4 | R$30 | 5×6dez | 7,50 |
 | 5 | R$36 | 6×6dez | 7,20 |
 | 6 | R$42 | 7×6dez | 7,00 |
-| 7 | R$54 | 9×6dez | 7,71* |
+| 7 | R$54 | 9×6dez | 7,72* |
 | 8 | R$60 | 10×6dez | 7,50 |
 | 9 | R$84 | 2×7dez | 9,34* |
 | 10 | R$84 | 2×7dez | 8,40 |
@@ -106,10 +106,10 @@ Fato derivado: jogos de 6 dezenas só servem até N=8 (10 jogos = R$60); a parti
 | 30 | R$210 | 5×7dez | 7,00 |
 | 50 | R$378 | 9×7dez | 7,56 |
 | 60 | R$420 | 10×7dez | 7,00 |
-| 64 | R$504 | 3×8dez | 7,88 |
+| 64 | R$504 | 3×8dez | 7,88* |
 | 100 | R$840 | 5×8dez | 8,40 |
 
-(* centavos não exatos.) Para N=6 o total 42 também é 1×7dez; vale o desempate por menor k.
+(* centavos não exatos. Corrigido na Fase 1: N=7 é 7,72 pela regra "para cima" — o vetor antigo dizia 7,71 —, e N=64 também tem centavo quebrado: 504/64 = 7,875.) Para N=6 o total 42 também é 1×7dez; vale o desempate por menor k.
 
 ### 4.4 Simulador (somente ADM)
 Três modos, todos com a tabela "composição → gasto, sobra, cota final, jogos, apostas equivalentes (gasto/R$6), probabilidades, aviso de centavos":

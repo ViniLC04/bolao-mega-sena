@@ -1,0 +1,28 @@
+{
+  "versoes": [
+    {
+      "vigencia_inicio": "2026-01-01",
+      "fonte": "SPEC seção 3 (valores conferidos em 16/11/2026). Dinheiro em centavos; percentuais em pontos-base (1% = 100).",
+      "params": {
+        "preco_aposta_simples": 600,
+        "bolao_valor_minimo": 1800,
+        "bolao_cota_minima": 700,
+        "bolao_cotas_min": 2,
+        "bolao_cotas_max": 100,
+        "bolao_jogos_max_por_recibo": 10,
+        "dezenas_min": 6,
+        "dezenas_max": 20,
+        "tarifa_servico_bolao_bp": 0,
+        "premio_bruto_bp": 4379,
+        "virada_distribuicao_bp": { "sena": 9000, "quina": 500, "quadra": 500 },
+        "comum_distribuicao_bp": { "sena": 4000, "quina": 1000, "quadra": 1000, "final_0_5": 2500, "virada": 1500 },
+        "ir_aliquota_bp": 3000,
+        "ir_valor_isento": 0,
+        "arredondamento_cota": "cima",
+        "limite_recibos_simulador": 4,
+        "concurso_virada": { "numero": 3100, "data": "2027-01-01", "hora": "11:00" },
+        "data_limite_aposta": "2026-12-31T22:00:00-03:00"
+      }
+    }
+  ]
+}

@@ -1,5 +1,9 @@
 // Motor de regras — funções puras (sem rede, sem banco, sem tela).
 
+/** Estrutura do jogo (não é "regra oficial" que muda): 60 dezenas, 6 sorteadas. */
+export const DEZENAS_UNIVERSO = 60
+export const DEZENAS_SORTEADAS = 6
+
 /** Combinações C(n, k). Resultado exato para os valores usados na Mega-Sena. */
 export function combinacoes(n: number, k: number): number {
   if (!Number.isInteger(n) || !Number.isInteger(k) || n < 0 || k < 0 || k > n) return 0
@@ -11,7 +15,5 @@ export function combinacoes(n: number, k: number): number {
   return Math.round(r)
 }
 
-/** Preço em CENTAVOS de um jogo de k dezenas. O preço da aposta simples vem de rules.json. */
-export function precoJogo(k: number, precoApostaSimplesCent: number): number {
-  return combinacoes(k, 6) * precoApostaSimplesCent
-}
+/** Total de combinações da Mega-Sena: C(60,6) = 50.063.860. */
+export const TOTAL_COMBINACOES = combinacoes(DEZENAS_UNIVERSO, DEZENAS_SORTEADAS)

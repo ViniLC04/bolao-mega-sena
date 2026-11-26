@@ -15,6 +15,13 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 8 | API comunitária de reserva (resultadomega, guidi) | — | **resolvido**: resultadomega funciona no navegador (CORS livre); guidi descartada (sem CORS). resultadomega é projeto novo de uma pessoa: manter marcada "não oficial" |
 | 9 | Lista oficial de Viradas para o filtro "só Viradas" (a planilha tem sorteios em 31/12 desde 1998 e a coluna "Acumulado Virada" não identifica Virada) | lista editável de concursos-Virada | aberto (achado no teste 4) |
 
+## Correções de vetores do SPEC (achadas na Fase 1; SPEC já corrigido)
+| # | O que o SPEC dizia | O que é | Como ficou |
+|---|---|---|---|
+| 10 | N=7: cota mínima R$ 7,71 | R$ 7,72 pela regra "arredonda para cima" (e N=9, R$ 9,34, só fecha com "para cima") | teste e SPEC corrigidos; se a Caixa arredondar diferente, mudar `arredondamento_cota` em `rules.json` |
+| 11 | "A partir de N=9 todos os totais são múltiplos de R$ 42" | não vale com 13 ou 20 dezenas (só se o nº de jogos for múltiplo de 7) | SPEC e teste corrigidos |
+| 12 | N=64: cota 7,88 sem asterisco | 504/64 = 7,875 → tem centavo quebrado | asterisco acrescentado; o motor avisa (`avisoCentavos`) |
+
 ## Premissas
 - Uso oficial da Caixa com 1 recibo por cota; sem tarifa de 35%.
 - "Máx. N iguais" vale entre todos os jogos do concurso.
