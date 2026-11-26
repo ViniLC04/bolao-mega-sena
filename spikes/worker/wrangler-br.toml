@@ -1,0 +1,8 @@
+name = "bolao-spike-caixa-br"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# Mesmo Worker, mas forcado a executar na regiao de Sao Paulo (AWS sa-east-1),
+# para o caso de o Worker normal rodar no exterior (visitante de fora) e a Caixa recusar.
+[placement]
+region = "aws:sa-east-1"

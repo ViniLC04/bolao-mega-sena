@@ -39,6 +39,8 @@
 
 <script>
 const CAIXA = 'https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/';
+const WORKER = 'https://bolao-spike-caixa.bola-megavirada.workers.dev';
+const WORKER_BR = 'https://bolao-spike-caixa-br.bola-megavirada.workers.dev';
 const TESTES = [
   { id: 'caixa-3086', nome: 'Caixa — concurso 3086 (existe)', url: CAIXA + '3086', esperado: 200,
     ler: (j) => `concurso ${j.numero}, ${j.dataApuracao}, dezenas ${(j.listaDezenas||[]).join('-')}` },
@@ -46,6 +48,12 @@ const TESTES = [
     ler: (j) => `concurso ${j.numero}, ${j.dataApuracao}, dezenas ${(j.listaDezenas||[]).join('-')}` },
   { id: 'caixa-9999', nome: 'Caixa — concurso 9999 (NÃO existe: esperado erro 500)', url: CAIXA + '9999', esperado: 500,
     ler: () => 'respondeu 500 como o esperado' },
+  { id: 'worker-3086', nome: 'Via Worker Cloudflare — concurso 3086', url: WORKER + '/?n=3086', esperado: 200, viaWorker: 200,
+    ler: (j) => `Caixa respondeu ${j.caixaStatus} ao Worker (data center ${j.origem?.colo}, placement ${j.origem?.cfPlacement ?? 'nenhum'}, ${j.ms} ms)${j.resumo?.numero ? ' — concurso ' + j.resumo.numero : ''}${j.erro ? ' — ' + j.erro : ''}` },
+  { id: 'worker-9999', nome: 'Via Worker Cloudflare — concurso 9999 (inexistente: esperado 500)', url: WORKER + '/?n=9999', esperado: 200, viaWorker: 500,
+    ler: (j) => `Caixa respondeu ${j.caixaStatus} ao Worker (data center ${j.origem?.colo})${j.erro ? ' — ' + j.erro : ''}` },
+  { id: 'workerbr-3086', nome: 'Via Worker FORÇADO no Brasil (São Paulo) — concurso 3086', url: WORKER_BR + '/?n=3086', esperado: 200, viaWorker: 200,
+    ler: (j) => `Caixa respondeu ${j.caixaStatus} ao Worker (data center ${j.origem?.colo}, placement ${j.origem?.cfPlacement ?? 'nenhum'}, ${j.ms} ms)${j.resumo?.numero ? ' — concurso ' + j.resumo.numero : ''}${j.erro ? ' — ' + j.erro : ''}` },
   { id: 'resultadomega', nome: 'resultadomega.com.br — último', url: 'https://resultadomega.com.br/api/ultimo.json', esperado: 200,
     ler: (j) => `concurso ${j.concurso}, ${j.data}, dezenas ${(j.dezenas||[]).join('-')}` },
   { id: 'guidi', nome: 'guidi.dev.br — concurso 3086', url: 'https://api.guidi.dev.br/loteria/megasena/3086', esperado: 200,
@@ -76,11 +84,19 @@ async function rodar(t) {
     out.ms = Math.round(performance.now() - ini);
     if (t.semCorpo) { out.detalhe = t.ler(); ctl.abort(); }
     else if (resp.status === t.esperado) {
-      if (t.esperado === 200) { out.detalhe = t.ler(await resp.json()); } else { out.detalhe = t.ler(); }
+      if (t.esperado === 200) {
+        const j = await resp.json();
+        out.detalhe = t.ler(j);
+        // Testes via Worker: o HTTP do Worker é sempre 200; o que vale é o que a Caixa respondeu ao Worker.
+        if (t.viaWorker !== undefined) { out.caixaViaWorker = j.caixaStatus; out.colo = j.origem?.colo; }
+      } else { out.detalhe = t.ler(); }
     } else {
       out.detalhe = 'HTTP ' + resp.status + ' (esperado ' + t.esperado + ')';
     }
     out.veredito = resp.status === t.esperado ? 'OK' : 'ERRO_HTTP';
+    if (t.viaWorker !== undefined && out.veredito === 'OK' && out.caixaViaWorker !== t.viaWorker) {
+      out.veredito = 'ERRO_HTTP'; out.status = 'Caixa→Worker: ' + (out.caixaViaWorker ?? 'sem resposta');
+    }
   } catch (e) {
     out.ms = Math.round(performance.now() - ini);
     if (t.semCorpo && out.status === 200) { out.veredito = 'OK'; }

@@ -1,0 +1,6 @@
+name = "bolao-spike-caixa"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# Teste 2 (SPEC 9.3): intermediario que consulta a Caixa e informa de onde saiu.
+# Apenas para o experimento da Fase 0; sem dados de participantes, sem segredos.
