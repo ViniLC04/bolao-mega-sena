@@ -187,7 +187,7 @@ Para um jogo de k dezenas com h acertos entre as 6 sorteadas:
 | 10 | 4 | 0 | 0 | 15 |
 
 ### 8.2 Valor
-`bruto_recibo = Σ_jogos (sena×valor_sena + quina×valor_quina + quadra×valor_quadra)` com os **valores oficiais por ganhador** do concurso (campo `rateio` de cada faixa). `liquido = bruto × (1 − ir)` (considerando `ir_valor_isento`). `por_cota = liquido_recibo / N`; o participante soma suas cotas em cada recibo.
+`bruto_recibo = Σ_jogos (sena×valor_sena + quina×valor_quina + quadra×valor_quadra)` com os **valores oficiais por ganhador** do concurso (campo `rateio` de cada faixa). `liquido = bruto × (1 − ir)` (considerando `ir_valor_isento`). `por_cota = liquido_recibo / N`; o participante soma suas cotas em cada recibo. **[PREMISSA adotada na Fase 1]**: o IR é arredondado para o centavo mais próximo (meio centavo sobe; reproduz o vetor abaixo) e o prêmio por cota é arredondado **para baixo**, com o resto indo para a caixinha; confirmar com o rateio real da Caixa.
 Vetor de teste (concurso 2955, Virada 2025: quina R$11.931,42; quadra R$216,76): jogo de 7 dezenas com 5 acertos = 2×11.931,42 + 5×216,76 = **R$24.946,64 bruto**, **R$17.462,65 líquido**.
 
 ### 8.3 Quando mostrar "o bolão ganhou"

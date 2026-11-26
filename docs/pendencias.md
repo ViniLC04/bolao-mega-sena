@@ -28,6 +28,10 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 13 | Modo "inverso": para cada N de 2 a 100, o melhor gasto ≤ orçamento; destaca o maior N viável (o SPEC era vago) | `simularInverso` em `src/engine/simulador.ts` |
 | 14 | Perfis do modo "por valor" (entre as composições de gasto máximo): *menos recibos* = menos recibos, depois menos jogos; *mais dezenas* = maiores k primeiro; *mais jogos* = mais jogos no total | `comparar` em `src/engine/simulador.ts` |
 | 15 | "Sobra" dos vetores do SPEC = orçamento − gasto (R$ 24 / R$ 26). Em **cota fixa** ela vai para a caixinha; em **cota-teto** cobra-se `gasto/N` arredondado e a caixinha é só o arredondamento | campos `sobraOrcamentoCent` e `caixinhaCent` |
+| 16 | IR: alíquota sobre o que passa de `ir_valor_isento` (padrão 0), arredondada para o centavo mais próximo (meio centavo sobe). Reproduz o vetor R$ 24.946,64 → R$ 17.462,65 | `impostoDeRenda` em `src/engine/acertos.ts`; `ir_valor_isento` em `rules.json` |
+| 17 | Prêmio por cota = líquido do recibo ÷ N **para baixo**; o resto fica na caixinha (o SPEC não dizia) | `conferirRecibo` em `src/engine/acertos.ts` |
+| 18 | O IR é calculado **por recibo** (valor bruto do recibo inteiro). Se a Caixa reter por ganhador/aposta, o líquido pode diferir em centavos | `conferirRecibo` |
+| 19 | Estimativas antes do sorteio (quadra pela fórmula, quina = 70% da quadra, SPEC 8.4) **não** entram no motor ainda: dependem da reconciliação do rateio (pendência 7) e são da Fase 4 | — |
 
 ## Premissas
 - Uso oficial da Caixa com 1 recibo por cota; sem tarifa de 35%.
