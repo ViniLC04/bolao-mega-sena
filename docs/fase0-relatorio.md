@@ -1,12 +1,12 @@
 # Fase 0 — Relatório dos testes de viabilidade (SPEC 9.3)
 
-Status: **1 de 4 concluídos, 1 parcial.**
+Status: **2 de 4 concluídos, 2 parciais (falta só o teste de visitante fora do Brasil).**
 
 | # | Teste | Status | Decisão |
 |---|---|---|---|
 | 1 | A Caixa responde ao navegador (CORS) e a visitantes de fora do Brasil? | **parcial**: Brasil OK; falta testar de fora do Brasil e por celular | provisória: plano A (navegador do visitante) |
 | 2 | Intermediário (Cloudflare Worker ou equivalente) fala com a Caixa a partir do Brasil? | **parcial**: Worker fala com a Caixa a partir de data centers do Brasil (GIG, GRU) | provisória: plano B = Cloudflare Worker (falta confirmar o caso de visitante no exterior) |
-| 3 | Política de senha e RLS no Supabase | pendente | — |
+| 3 | Política de senha e RLS no Supabase | **concluído (26/11/2026)** | **Supabase atende: senha forte imposta pelo servidor, cadastro público desligado, público não lê nomes** |
 | 4 | Importação da planilha oficial | **concluído (26/11/2026)** | **Usar a planilha como carga inicial do banco: SIM** |
 
 ---
@@ -50,6 +50,32 @@ Conclusões adicionais: funciona com origem real (domínio publicado), não só 
 **Ainda falta**
 - Visitante **fora do Brasil** (IP residencial no exterior): a Caixa responde no navegador? O Worker normal (que roda perto do visitante, portanto no exterior) é recusado? O Worker forçado em São Paulo resolve? (Teste C, depende de alguém no exterior.)
 - Observação: `cfPlacement` veio vazio nos testes feitos no Brasil, então ainda não está provado que o `placement` forçado funciona. O teste do exterior decide.
+
+---
+
+## Teste 3 — Supabase: política de senha e RLS (26/11/2026)
+
+**Resultado: aprovado.** Projeto `bolao-mega-sena`, região São Paulo, plano Free. Script: `spikes/supabase/rls.mts` (chama a API diretamente, como um atacante; SQL em `spikes/supabase/teste-rls.sql`). Todas as verificações passaram.
+
+**Privacidade (chave pública/publishable, chamada direta à API)**
+- `SELECT nome`, `SELECT *` e busca com filtro por nome: **nenhum nome devolvido** (HTTP 401).
+- `INSERT`, `UPDATE` e `DELETE` pelo público: recusados.
+- A função pública de totais (`resumo_publico_teste`, `security definer`) funciona e devolve só números: `total_cotas 6, cotas_pagas 3, participantes 3`, sem nomes. É o modelo a usar na Fase 3 ("público só lê funções agregadas").
+- O esquema da API (`/rest/v1/`) também responde 401 ao público.
+
+**Política de senha (servidor, via API administrativa)**
+- Recusadas (HTTP 422): `abc`, `12345678`, `abcdefgh`, `Abcdefgh` e `Abcdefg1` (8 caracteres, sem símbolo). Ou seja, o servidor exige **minúscula, maiúscula, número e símbolo**, como pede o SPEC (seção 11).
+- Aceita: `Abcdef1!xyz`. Usuário de teste apagado em seguida.
+- **Cadastro público desligado** (signup recusado).
+
+**Pontos de atenção para a Fase 3**
+1. A tabela de teste foi protegida em **duas camadas**: RLS ligada **e** permissões de tabela retiradas do público (`revoke`). O teste confirma a barreira de permissões; **a camada de RLS isolada** (se alguém conceder `SELECT` por engano, a RLS sem política deve devolver lista vazia) deve ter teste próprio nas tabelas reais.
+2. O Supabase agora usa chaves `sb_publishable_…` e `sb_secret_…` (as legadas serão aposentadas no início de 2027). Usar sempre as novas. A chave secreta só roda local ou em servidor, **nunca** no navegador nem no Git.
+3. Falta ainda a regra "bloqueio após tentativas erradas" (SPEC 11); verificar nas configurações de proteção de Auth na Fase 2.
+4. O servidor do Supabase não está atrás do proxy da empresa nos testes feitos; o Node precisou de `NODE_USE_SYSTEM_CA=1` por causa do Zscaler (vale para qualquer script local que acesse a internet).
+5. Limpeza: a tabela e a função de teste ainda existem no banco; apagar com o bloco "LIMPEZA" do SQL ao final da Fase 0.
+
+**Decisão:** usar o Supabase (São Paulo) como banco e autenticação. A política de senha nativa já cumpre o SPEC; ainda assim a validação "na tela e no servidor" será mantida no app (a do servidor já está garantida pelo Supabase).
 
 ---
 

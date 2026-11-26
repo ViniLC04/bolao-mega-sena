@@ -30,8 +30,13 @@ const ok = (cond: boolean, texto: string, extra = '') => {
   if (!cond) falhas++
   console.log(`${cond ? 'PASSOU ' : 'FALHOU '} ${texto}${extra ? ' — ' + extra : ''}`)
 }
+// Chaves novas do Supabase ("sb_publishable_..." / "sb_secret_...") não são JWT: vão só no cabeçalho apikey.
+// Chaves antigas (anon / service_role) são JWT e vão nos dois cabeçalhos.
 const cab = (chave: string, extra: Record<string, string> = {}) => ({
-  apikey: chave, Authorization: `Bearer ${chave}`, 'Content-Type': 'application/json', ...extra,
+  apikey: chave,
+  ...(chave.startsWith('sb_') ? {} : { Authorization: `Bearer ${chave}` }),
+  'Content-Type': 'application/json',
+  ...extra,
 })
 const vazaNome = (corpo: string) => NOMES.some((n) => corpo.includes(n))
 
