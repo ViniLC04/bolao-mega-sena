@@ -42,6 +42,13 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 23 | Escopo padrão do "máx. de números iguais" = todo o concurso. Nunca se repete combinação de 6 dezenas, com ou sem premissas | `gerarJogos` |
 | 24 | Dezena "obrigatória" fora das "mais frequentes (restringir)" é permitida: a obrigatoriedade vence a restrição | `verificar` |
 
+## Decisões e pendências da Fase 2 (login)
+| # | Item | Status |
+|---|---|---|
+| 25 | Login por usuário = e-mail interno fixo `usuario@example.com`; recuperação de senha pelo painel do Supabase, não por e-mail | decidido pelo usuário em 26/11/2026 |
+| 26 | "Bloqueio após tentativas erradas": hoje só o limite por IP do Supabase + espera crescente na tela (`src/app/bloqueio.ts`); quem chama a API direto não passa pela espera | **pendente para a Fase 5** (bloqueio de conta / proteção contra abuso do Supabase Auth) |
+| 27 | Chunk do app passa de 500 kB (Supabase + roteador + motor) | aceitável por ora; dividir em partes na Fase 5 se ficar lento no celular |
+
 ## Premissas
 - Uso oficial da Caixa com 1 recibo por cota; sem tarifa de 35%.
 - "Máx. N iguais" vale entre todos os jogos do concurso.

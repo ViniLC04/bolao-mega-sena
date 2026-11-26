@@ -255,7 +255,7 @@ Frequência, atraso, pares/ímpares, soma, linhas do volante, consecutivos; **fi
 | Conferência | rateio oficial e simulações | acertos, "ganhou?", valor por cota |
 | Estatísticas | todas | todas (leitura) |
 
-- **Senha do ADM:** mínimo 8 caracteres com maiúscula, minúscula, número e símbolo, validada na tela **e** no servidor; sem cadastro público; bloqueio após tentativas erradas; "usuário" mapeado para o e-mail interno do Supabase Auth; recuperação por e-mail cadastrado. **[PREMISSA]** um único ADM.
+- **Senha do ADM:** mínimo 8 caracteres com maiúscula, minúscula, número e símbolo, validada na tela **e** no servidor; sem cadastro público; bloqueio após tentativas erradas; "usuário" mapeado para o e-mail interno do Supabase Auth; recuperação por e-mail cadastrado. **[PREMISSA]** um único ADM. **[DECISÃO da Fase 2]**: o usuário vira o e-mail interno fixo `usuario@example.com` (domínio aceito pelo Supabase, testado na Fase 0); por isso a recuperação de senha **não chega por e-mail**: o dono do projeto troca a senha no painel do Supabase (Authentication → Users). O bloqueio após tentativas erradas é **parcial** na Fase 2 (limite por IP do próprio Supabase + espera crescente na tela); o bloqueio de conta fica para a Fase 5.
 - **Privacidade no servidor:** Row Level Security; o público só acessa **visões agregadas/funções** (sem nomes). Nunca depender de ocultar na tela.
 - **Link pessoal secreto por participante** (opcional, liga/desliga): mostra só as cotas e o valor dele.
 - **Data limite de aposta:** um campo de data/hora editável pelo ADM; bloqueia novas cotas (ADM pode prorrogar) e alimenta a contagem regressiva exibida ao apostador.
