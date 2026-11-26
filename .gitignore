@@ -1,0 +1,29 @@
+# Dados de participantes e planilhas (repositório é PÚBLICO — nunca commitar)
+dados/
+Dados/
+*.xlsx
+*.xls
+*.csv
+
+# Segredos
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependências e builds
+node_modules/
+dist/
+build/
+coverage/
+.wrangler/
+.dev.vars
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.log
