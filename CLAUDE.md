@@ -52,7 +52,13 @@ dados/           (ignorado pelo Git) planilhas locais do usuário
 ```
 
 ## Comandos
-(Preencher após o esqueleto da Fase 0: instalar, rodar em desenvolvimento, testar, gerar build, publicar.)
+Requer Node.js LTS. Rodar na pasta do projeto (`C:\Projetos\bolao-mega-sena`):
+- Instalar dependências: `npm install`
+- Rodar em desenvolvimento: `npm run dev` (abre em http://localhost:5173)
+- Testes (uma vez): `npm test` · testes ao salvar: `npm run test:watch`
+- Checar que nenhum dado/segredo está no Git: `npm run checar-segredos`
+- Gerar build: `npm run build`
+- Publicar: (definir na Fase 5 — Cloudflare Pages)
 
 ## Definição de pronto (por fase)
 Testes passando · vetores do SPEC cobertos · sem segredos no Git · RLS testada (quando houver banco) · commit feito · resumo em português para o usuário com o próximo passo.

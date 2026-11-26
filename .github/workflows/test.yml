@@ -1,0 +1,22 @@
+name: Testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Checar que nenhum dado ou segredo está no Git
+        run: npm run checar-segredos
+      - name: Testes do motor de regras
+        run: npm test
+      - name: Build
+        run: npm run build
