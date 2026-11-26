@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Teste 1 — A Caixa responde ao navegador?</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { max-width: 760px; margin: 0 auto; padding: 16px; line-height: 1.4; }
+    h1 { font-size: 1.3rem; }
+    button { font-size: 1.1rem; padding: 12px 20px; border-radius: 8px; border: 0; background: #1a7f37; color: #fff; cursor: pointer; }
+    button:disabled { opacity: .5; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    th, td { text-align: left; padding: 8px; border-bottom: 1px solid #8884; vertical-align: top; font-size: .92rem; }
+    .ok { color: #1a7f37; font-weight: 700; }
+    .ruim { color: #cf222e; font-weight: 700; }
+    .meio { color: #9a6700; font-weight: 700; }
+    code, pre, textarea { font-family: ui-monospace, monospace; font-size: .8rem; }
+    textarea { width: 100%; height: 220px; margin-top: 8px; }
+    .aviso { background: #8881; padding: 10px; border-radius: 8px; margin: 12px 0; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <h1>Teste 1 — A Caixa responde ao navegador?</h1>
+  <p>Este teste roda <b>no seu navegador</b> e consulta a Caixa e as fontes de reserva. Nada é gravado em lugar nenhum.</p>
+  <div class="aviso">
+    Para saber de <b>onde</b> você está acessando, a página também consulta <code>ipinfo.io</code> (mostra país e cidade do seu IP).
+    Rode uma vez <b>com a VPN da empresa desligada</b> e outra <b>com ela ligada</b>.
+  </div>
+  <button id="go">Testar agora</button>
+  <p id="onde"></p>
+  <table>
+    <thead><tr><th>Fonte</th><th>Resultado</th><th>Tempo</th><th>O que veio</th></tr></thead>
+    <tbody id="linhas"></tbody>
+  </table>
+  <h2 style="font-size:1.05rem;margin-top:24px">Resumo para copiar e me enviar</h2>
+  <textarea id="resumo" readonly placeholder="Aparece aqui depois do teste."></textarea>
+  <p><button id="copiar" disabled>Copiar resumo</button></p>
+
+<script>
+const CAIXA = 'https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena/';
+const TESTES = [
+  { id: 'caixa-3086', nome: 'Caixa — concurso 3086 (existe)', url: CAIXA + '3086', esperado: 200,
+    ler: (j) => `concurso ${j.numero}, ${j.dataApuracao}, dezenas ${(j.listaDezenas||[]).join('-')}` },
+  { id: 'caixa-3090', nome: 'Caixa — concurso 3090 (recente, não está na planilha)', url: CAIXA + '3090', esperado: 200,
+    ler: (j) => `concurso ${j.numero}, ${j.dataApuracao}, dezenas ${(j.listaDezenas||[]).join('-')}` },
+  { id: 'caixa-9999', nome: 'Caixa — concurso 9999 (NÃO existe: esperado erro 500)', url: CAIXA + '9999', esperado: 500,
+    ler: () => 'respondeu 500 como o esperado' },
+  { id: 'resultadomega', nome: 'resultadomega.com.br — último', url: 'https://resultadomega.com.br/api/ultimo.json', esperado: 200,
+    ler: (j) => `concurso ${j.concurso}, ${j.data}, dezenas ${(j.dezenas||[]).join('-')}` },
+  { id: 'guidi', nome: 'guidi.dev.br — concurso 3086', url: 'https://api.guidi.dev.br/loteria/megasena/3086', esperado: 200,
+    ler: (j) => `concurso ${j.numero}, ${j.dataApuracao}, dezenas ${(j.listaDezenas||[]).join('-')}` },
+  { id: 'valorfinal', nome: 'valorfinal.com.br — CSV (só checa se abre)', url: 'https://valorfinal.com.br/dados/loterias/megasena.csv', esperado: 200, semCorpo: true,
+    ler: () => 'arquivo acessível' },
+];
+
+const $ = (id) => document.getElementById(id);
+let resultados = [];
+
+async function medirOnde() {
+  try {
+    const r = await fetch('https://ipinfo.io/json', { cache: 'no-store' });
+    const j = await r.json();
+    return { pais: j.country, cidade: j.city, regiao: j.region, org: j.org };
+  } catch (e) { return null; }
+}
+
+async function rodar(t) {
+  const ini = performance.now();
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 20000);
+  const out = { id: t.id, nome: t.nome, url: t.url };
+  try {
+    const resp = await fetch(t.url, { cache: 'no-store', signal: ctl.signal });
+    out.status = resp.status;
+    out.ms = Math.round(performance.now() - ini);
+    if (t.semCorpo) { out.detalhe = t.ler(); ctl.abort(); }
+    else if (resp.status === t.esperado) {
+      if (t.esperado === 200) { out.detalhe = t.ler(await resp.json()); } else { out.detalhe = t.ler(); }
+    } else {
+      out.detalhe = 'HTTP ' + resp.status + ' (esperado ' + t.esperado + ')';
+    }
+    out.veredito = resp.status === t.esperado ? 'OK' : 'ERRO_HTTP';
+  } catch (e) {
+    out.ms = Math.round(performance.now() - ini);
+    if (t.semCorpo && out.status === 200) { out.veredito = 'OK'; }
+    else if (e.name === 'AbortError') { out.veredito = 'TEMPO_ESGOTADO'; out.detalhe = 'sem resposta em 20 s'; }
+    else { out.veredito = 'BLOQUEADO'; out.detalhe = 'o navegador não conseguiu ler (CORS, rede ou bloqueio de IP)'; }
+  } finally { clearTimeout(timer); }
+  return out;
+}
+
+function linha(r) {
+  const cls = r.veredito === 'OK' ? 'ok' : (r.veredito === 'ERRO_HTTP' ? 'meio' : 'ruim');
+  const texto = { OK: 'OK', ERRO_HTTP: 'ERRO HTTP ' + r.status, BLOQUEADO: 'BLOQUEADO', TEMPO_ESGOTADO: 'SEM RESPOSTA' }[r.veredito];
+  return `<tr><td>${r.nome}</td><td class="${cls}">${texto}</td><td>${r.ms ?? ''} ms</td><td>${r.detalhe ?? ''}</td></tr>`;
+}
+
+$('go').onclick = async () => {
+  $('go').disabled = true; $('copiar').disabled = true;
+  $('linhas').innerHTML = ''; $('resumo').value = ''; $('onde').textContent = 'Testando…';
+  const onde = await medirOnde();
+  $('onde').innerHTML = onde
+    ? `Você está acessando de: <b>${onde.cidade || '?'} / ${onde.regiao || '?'} / ${onde.pais || '?'}</b> (${onde.org || ''})`
+    : 'Não consegui descobrir o país do seu IP.';
+  resultados = [];
+  for (const t of TESTES) {
+    const r = await rodar(t);
+    resultados.push(r);
+    $('linhas').insertAdjacentHTML('beforeend', linha(r));
+  }
+  const quando = new Date().toLocaleString('pt-BR');
+  const linhas = resultados.map((r) => `- ${r.nome}: ${r.veredito}${r.status ? ' (HTTP ' + r.status + ')' : ''}, ${r.ms} ms${r.detalhe ? ' — ' + r.detalhe : ''}`);
+  $('resumo').value =
+    `TESTE 1 — ${quando}\nPágina aberta em: ${location.origin}\nVPN: ______ (preencha: ligada/desligada)\n` +
+    `Local do IP: ${onde ? [onde.cidade, onde.regiao, onde.pais].join(' / ') : 'desconhecido'}\n` +
+    `Navegador: ${navigator.userAgent}\n\n` + linhas.join('\n');
+  $('go').disabled = false; $('copiar').disabled = false;
+};
+$('copiar').onclick = async () => {
+  try { await navigator.clipboard.writeText($('resumo').value); $('copiar').textContent = 'Copiado!'; }
+  catch { $('resumo').select(); document.execCommand('copy'); $('copiar').textContent = 'Copiado!'; }
+  setTimeout(() => { $('copiar').textContent = 'Copiar resumo'; }, 2000);
+};
+</script>
+</body>
+</html>

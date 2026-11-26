@@ -1,13 +1,42 @@
 # Fase 0 — Relatório dos testes de viabilidade (SPEC 9.3)
 
-Status: **1 de 4 concluídos.**
+Status: **1 de 4 concluídos, 1 parcial.**
 
 | # | Teste | Status | Decisão |
 |---|---|---|---|
-| 1 | A Caixa responde ao navegador (CORS) e a visitantes de fora do Brasil? | pendente | — |
+| 1 | A Caixa responde ao navegador (CORS) e a visitantes de fora do Brasil? | **parcial**: Brasil OK; falta testar de fora do Brasil e por celular | provisória: plano A (navegador do visitante) |
 | 2 | Intermediário (Cloudflare Worker ou equivalente) fala com a Caixa a partir do Brasil? | pendente | — |
 | 3 | Política de senha e RLS no Supabase | pendente | — |
 | 4 | Importação da planilha oficial | **concluído (26/11/2026)** | **Usar a planilha como carga inicial do banco: SIM** |
+
+---
+
+## Teste 1 — A Caixa responde ao navegador? (PARCIAL, 26/11/2026)
+
+Página de teste: `spikes/caixa.html` (rodar com `npm.cmd run dev` e abrir `http://localhost:5173/spikes/caixa.html`).
+
+**Medido no navegador do app, IP de Rio de Janeiro/BR (saída do proxy corporativo Zscaler):**
+
+| Fonte | Resultado | Tempo |
+|---|---|---|
+| Caixa, concurso 3086 (existe) | OK, HTTP 200, dados corretos | 385 ms |
+| Caixa, concurso 3090 (24/11/2026, ainda fora da planilha) | OK, HTTP 200 | 104 ms |
+| Caixa, concurso 9999 (inexistente) | HTTP 500, como o SPEC previa | 89 ms |
+| resultadomega.com.br `ultimo.json` | OK (último = concurso 3090) | 162 ms |
+| valorfinal.com.br CSV | OK | 338 ms |
+| guidi.dev.br concurso 3086 | **BLOQUEADO no navegador** (resposta sem cabeçalho CORS) | 631 ms |
+
+Conferido também por consulta direta (curl) do mesmo computador: a Caixa devolve `Access-Control-Allow-Origin: *` (qualquer site pode ler no navegador); guidi **não** devolve esse cabeçalho.
+
+**Conclusões já firmes**
+1. **No Brasil, o plano A funciona:** o navegador do visitante consegue consultar a Caixa por número, e o concurso inexistente devolve 500 (tratar como "fim da lista", não como erro).
+2. **guidi não serve como 2ª leitura pelo navegador** (SPEC 9.4 supunha que sim). A 2ª fonte passa a ser **resultadomega** (CORS livre).
+3. A planilha está **4 concursos atrás** (3086 → Caixa já tem até o 3090): o botão "Atualizar" terá trabalho real a fazer logo de início.
+
+**Ainda falta (depende de página publicada, Teste 2)**
+- Visitante **fora do Brasil** (IP residencial no exterior) consegue ler a Caixa?
+- Celular em **rede 4G/5G** do Brasil (IP residencial), sem proxy corporativo.
+- Origem real (domínio publicado) em vez de `localhost`: a Caixa manda `*`, então não deve mudar, mas será conferido.
 
 ---
 

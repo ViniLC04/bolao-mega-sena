@@ -52,7 +52,8 @@ dados/           (ignorado pelo Git) planilhas locais do usuário
 ```
 
 ## Comandos
-Requer Node.js LTS. Rodar na pasta do projeto (`C:\Projetos\bolao-mega-sena`):
+Requer Node.js LTS. Rodar na pasta do projeto (`C:\Projetos\bolao-mega-sena`).
+**No PowerShell deste computador, use `npm.cmd` no lugar de `npm`** (a política de scripts bloqueia `npm.ps1`); o mesmo vale para `npx.cmd`.
 - Instalar dependências: `npm install`
 - Rodar em desenvolvimento: `npm run dev` (abre em http://localhost:5173)
 - Testes (uma vez): `npm test` · testes ao salvar: `npm run test:watch`
