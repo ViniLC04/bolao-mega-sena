@@ -5,7 +5,7 @@ Status: **1 de 4 concluídos, 1 parcial.**
 | # | Teste | Status | Decisão |
 |---|---|---|---|
 | 1 | A Caixa responde ao navegador (CORS) e a visitantes de fora do Brasil? | **parcial**: Brasil OK; falta testar de fora do Brasil e por celular | provisória: plano A (navegador do visitante) |
-| 2 | Intermediário (Cloudflare Worker ou equivalente) fala com a Caixa a partir do Brasil? | pendente | — |
+| 2 | Intermediário (Cloudflare Worker ou equivalente) fala com a Caixa a partir do Brasil? | **parcial**: Worker fala com a Caixa a partir de data centers do Brasil (GIG, GRU) | provisória: plano B = Cloudflare Worker (falta confirmar o caso de visitante no exterior) |
 | 3 | Política de senha e RLS no Supabase | pendente | — |
 | 4 | Importação da planilha oficial | **concluído (26/11/2026)** | **Usar a planilha como carga inicial do banco: SIM** |
 
@@ -33,10 +33,23 @@ Conferido também por consulta direta (curl) do mesmo computador: a Caixa devolv
 2. **guidi não serve como 2ª leitura pelo navegador** (SPEC 9.4 supunha que sim). A 2ª fonte passa a ser **resultadomega** (CORS livre).
 3. A planilha está **4 concursos atrás** (3086 → Caixa já tem até o 3090): o botão "Atualizar" terá trabalho real a fazer logo de início.
 
-**Ainda falta (depende de página publicada, Teste 2)**
-- Visitante **fora do Brasil** (IP residencial no exterior) consegue ler a Caixa?
-- Celular em **rede 4G/5G** do Brasil (IP residencial), sem proxy corporativo.
-- Origem real (domínio publicado) em vez de `localhost`: a Caixa manda `*`, então não deve mudar, mas será conferido.
+**Celular em 4G/5G, IP de São Paulo/BR, origem real `https://bolao-spike-caixa.pages.dev` (26/11/2026, 17:23)**
+
+| Fonte | Resultado | Tempo |
+|---|---|---|
+| Caixa 3086 / 3090 | OK (200) | 580 / 124 ms |
+| Caixa 9999 (inexistente) | HTTP 500 como esperado | 148 ms |
+| Via Worker normal, 3086 / 9999 | Caixa respondeu 200 / 500 ao Worker (data center GRU = São Paulo) | 448 / 678 ms |
+| Via Worker forçado em São Paulo, 3086 | Caixa respondeu 200 | 206 ms |
+| resultadomega | OK | 589 ms |
+| valorfinal CSV | OK | 860 ms |
+| guidi | **BLOQUEADO** (sem CORS, de novo) | 870 ms |
+
+Conclusões adicionais: funciona com origem real (domínio publicado), não só `localhost`, e com IP residencial de operadora no Brasil (sem proxy corporativo). O resultado da Caixa no Worker, a partir de um data center brasileiro, é o mesmo que no navegador.
+
+**Ainda falta**
+- Visitante **fora do Brasil** (IP residencial no exterior): a Caixa responde no navegador? O Worker normal (que roda perto do visitante, portanto no exterior) é recusado? O Worker forçado em São Paulo resolve? (Teste C, depende de alguém no exterior.)
+- Observação: `cfPlacement` veio vazio nos testes feitos no Brasil, então ainda não está provado que o `placement` forçado funciona. O teste do exterior decide.
 
 ---
 
