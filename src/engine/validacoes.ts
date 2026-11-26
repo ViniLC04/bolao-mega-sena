@@ -20,6 +20,23 @@ export function validarJogo(dezenas: readonly number[], r: ParamsRegras): string
   return erros
 }
 
+/**
+ * Senha do ADM (SPEC 11): mínimo de 8 caracteres, com maiúscula, minúscula, número e símbolo.
+ * Usa os MESMOS grupos de caracteres que o servidor do Supabase (letras a–z e A–Z, dígitos e os símbolos
+ * abaixo), para a tela nunca aceitar o que o servidor vai recusar. O servidor continua sendo quem manda.
+ */
+export const SIMBOLOS_SENHA = '!@#$%^&*()_+-=[]{};\'\\:"|<>?,./`~'
+
+export function validarSenha(senha: string): string[] {
+  const erros: string[] = []
+  if (senha.length < 8) erros.push('A senha deve ter pelo menos 8 caracteres.')
+  if (!/[a-z]/.test(senha)) erros.push('A senha deve ter uma letra minúscula.')
+  if (!/[A-Z]/.test(senha)) erros.push('A senha deve ter uma letra maiúscula.')
+  if (!/[0-9]/.test(senha)) erros.push('A senha deve ter um número.')
+  if (![...senha].some((c) => SIMBOLOS_SENHA.includes(c))) erros.push('A senha deve ter um símbolo (por exemplo ! @ # $ %).')
+  return erros
+}
+
 /** N cotas do bolão: inteiro entre o mínimo e o máximo da regra. */
 export function validarN(n: number, r: ParamsRegras): string[] {
   return nCotasValido(n, r) ? [] : [`O número de cotas deve ser um inteiro de ${r.bolao_cotas_min} a ${r.bolao_cotas_max}.`]

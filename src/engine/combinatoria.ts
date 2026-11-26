@@ -18,6 +18,24 @@ export function combinacoes(n: number, k: number): number {
 /** Total de combinações da Mega-Sena: C(60,6) = 50.063.860. */
 export const TOTAL_COMBINACOES = combinacoes(DEZENAS_UNIVERSO, DEZENAS_SORTEADAS)
 
+/** Quantos bits 1 há em um inteiro de 32 bits. */
+export function popcount32(x: number): number {
+  x -= (x >>> 1) & 0x55555555
+  x = (x & 0x33333333) + ((x >>> 2) & 0x33333333)
+  return (((x + (x >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24
+}
+
+/** Máscara de bits de um conjunto de dezenas: parte baixa = dezenas 1..30, parte alta = 31..60. */
+export function mascaraBits(dezenas: readonly number[]): [number, number] {
+  let lo = 0
+  let hi = 0
+  for (const d of dezenas) {
+    if (d <= 30) lo |= 1 << (d - 1)
+    else hi |= 1 << (d - 31)
+  }
+  return [lo, hi]
+}
+
 /**
  * "1 em quantos": chance de sena de quem cobre `combinacoesDistintas` combinações de 6 dezenas.
  * Ex.: 329 combinações → 1 em 152.170 (SPEC seção 7).

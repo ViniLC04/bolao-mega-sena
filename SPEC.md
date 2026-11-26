@@ -148,6 +148,7 @@ Entrada: lista de recibos (k, g) vinda do simulador. Saída: jogos (conjuntos de
 
 Comportamento: geração por amostragem com rejeição e reinício; **detectar inviabilidade** e dizer qual premissa trava; regerar um jogo; **travar** jogos; relatório "premissas atendidas por jogo" e sobreposição máxima; ao **confirmar**, congelar com data/hora e **hash SHA-256** do conjunto de jogos, opção de anexar foto do recibo (armazenamento privado).
 Aviso obrigatório: restringir a poucos números aumenta repetições e **reduz** combinações distintas.
+**[PREMISSAS adotadas na Fase 2]**: pares, soma e linhas do volante valem para as k dezenas do jogo (valores absolutos); a sugestão de soma é o P10–P90 da soma dos sorteios de 6 dezenas escalado por k/6 (aproximação); "quinas/quadras que o jogo já fez" = nº de concursos do período em que o jogo teve ≥ 5 (≥ 4) acertos; "obrigatórios em ≥ M jogos" = cada dezena obrigatória aparece em pelo menos M jogos do bolão; o escopo padrão do "máx. de iguais" é todo o concurso; nunca se repete combinação de 6 dezenas, com ou sem premissas.
 
 ---
 

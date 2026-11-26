@@ -2,7 +2,15 @@
 //
 // Lembrete que a tela deve mostrar: estatísticas de sorteios passados NÃO aumentam a probabilidade.
 // Cada sorteio é independente; todo conjunto de 6 dezenas tem a mesma chance.
-import { combinacoes, DEZENAS_SORTEADAS, DEZENAS_UNIVERSO, TOTAL_COMBINACOES, umEm } from './combinatoria'
+import {
+  combinacoes,
+  DEZENAS_SORTEADAS,
+  DEZENAS_UNIVERSO,
+  mascaraBits,
+  popcount32,
+  TOTAL_COMBINACOES,
+  umEm,
+} from './combinatoria'
 import { criarRng } from './random'
 
 // ---------------------------------------------------------------------------------------------
@@ -75,30 +83,38 @@ export function rankCombinacao(seis: readonly number[]): number {
 export function combinacoesDistintas(jogos: readonly (readonly number[])[]): number {
   const vistos = new Uint8Array((TOTAL_COMBINACOES >>> 3) + 1)
   let distintas = 0
-  const seis = new Array<number>(DEZENAS_SORTEADAS)
-  for (const jogoBruto of jogos) {
-    const jogo = [...jogoBruto].sort((a, b) => a - b)
-    const k = jogo.length
-    if (k < DEZENAS_SORTEADAS) continue
-    const idx = [0, 1, 2, 3, 4, 5]
-    for (;;) {
-      for (let i = 0; i < DEZENAS_SORTEADAS; i++) seis[i] = jogo[idx[i]]
-      const rank = rankCombinacao(seis)
+  for (const jogo of jogos) {
+    paraCadaRank(jogo, (rank) => {
       const byte = rank >>> 3
       const bit = 1 << (rank & 7)
       if (!(vistos[byte] & bit)) {
         vistos[byte] |= bit
         distintas++
       }
-      // próxima combinação de índices
-      let p = DEZENAS_SORTEADAS - 1
-      while (p >= 0 && idx[p] === k - DEZENAS_SORTEADAS + p) p--
-      if (p < 0) break
-      idx[p]++
-      for (let q = p + 1; q < DEZENAS_SORTEADAS; q++) idx[q] = idx[q - 1] + 1
-    }
+    })
   }
   return distintas
+}
+
+/**
+ * Percorre as C(k,6) combinações de 6 dezenas de um jogo, chamando `cb` com o rank de cada uma.
+ * Se `cb` devolver true, para na hora e esta função devolve true (serve para "achei uma já coberta").
+ */
+export function paraCadaRank(jogoBruto: readonly number[], cb: (rank: number) => boolean | void): boolean {
+  const jogo = [...jogoBruto].sort((a, b) => a - b)
+  const k = jogo.length
+  if (k < DEZENAS_SORTEADAS) return false
+  const idx = [0, 1, 2, 3, 4, 5]
+  const seis = new Array<number>(DEZENAS_SORTEADAS)
+  for (;;) {
+    for (let i = 0; i < DEZENAS_SORTEADAS; i++) seis[i] = jogo[idx[i]]
+    if (cb(rankCombinacao(seis)) === true) return true
+    let p = DEZENAS_SORTEADAS - 1
+    while (p >= 0 && idx[p] === k - DEZENAS_SORTEADAS + p) p--
+    if (p < 0) return false
+    idx[p]++
+    for (let q = p + 1; q < DEZENAS_SORTEADAS; q++) idx[q] = idx[q - 1] + 1
+  }
 }
 
 /** 7: chance exata de sena do bolão = combinações distintas ÷ 50.063.860. */
@@ -110,22 +126,8 @@ export function probabilidadeSena(distintas: number): number {
 // "Pelo menos uma quina/quadra no bolão": Monte Carlo e enumeração exata
 // ---------------------------------------------------------------------------------------------
 
-/** Máscara de bits de um conjunto de dezenas: parte baixa = dezenas 1..30, parte alta = 31..60. */
-function mascara(dezenas: readonly number[]): [number, number] {
-  let lo = 0
-  let hi = 0
-  for (const d of dezenas) {
-    if (d <= 30) lo |= 1 << (d - 1)
-    else hi |= 1 << (d - 31)
-  }
-  return [lo, hi]
-}
-
-function bits(x: number): number {
-  x -= (x >>> 1) & 0x55555555
-  x = (x & 0x33333333) + ((x >>> 2) & 0x33333333)
-  return (((x + (x >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24
-}
+const mascara = mascaraBits
+const bits = popcount32
 
 export interface EstimativaFaixa {
   /** quantos sorteios deram ao menos um jogo com essa faixa */

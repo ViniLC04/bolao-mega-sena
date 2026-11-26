@@ -33,6 +33,15 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 18 | O IR é calculado **por recibo** (valor bruto do recibo inteiro). Se a Caixa reter por ganhador/aposta, o líquido pode diferir em centavos | `conferirRecibo` |
 | 19 | Estimativas antes do sorteio (quadra pela fórmula, quina = 70% da quadra, SPEC 8.4) **não** entram no motor ainda: dependem da reconciliação do rateio (pendência 7) e são da Fase 4 | — |
 
+## Premissas adotadas na Fase 2 (gerador)
+| # | Premissa | Onde mudar |
+|---|---|---|
+| 20 | Pares, soma e linhas do volante valem para as k dezenas do jogo (valores absolutos). A sugestão de soma é o P10–P90 da soma dos sorteios de 6 dezenas escalado por k/6 (aproximação) | `verificar` em `src/engine/gerador.ts` e `sugestaoSoma` em `src/engine/historico.ts` |
+| 21 | "Quinas/quadras que o jogo já fez" = nº de concursos do período com ≥ 5 (≥ 4) acertos | `contarFaixasHistorico` em `src/engine/historico.ts` |
+| 22 | "Obrigatórios em ≥ M jogos" = cada dezena obrigatória aparece em pelo menos M jogos do bolão | `gerarInterno` em `src/engine/gerador.ts` |
+| 23 | Escopo padrão do "máx. de números iguais" = todo o concurso. Nunca se repete combinação de 6 dezenas, com ou sem premissas | `gerarJogos` |
+| 24 | Dezena "obrigatória" fora das "mais frequentes (restringir)" é permitida: a obrigatoriedade vence a restrição | `verificar` |
+
 ## Premissas
 - Uso oficial da Caixa com 1 recibo por cota; sem tarifa de 35%.
 - "Máx. N iguais" vale entre todos os jogos do concurso.
