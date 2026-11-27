@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { caixinha, resumoCotas, validarQtdCotas, valorDevido, type CotaRegistro } from '../src/engine/cotas'
+import { caixinha, resumoCotas, validarQtdCotas, valorDevido, verificarFechamento, type CotaRegistro } from '../src/engine/cotas'
+import { REGRAS } from './vectors/regras-teste'
 
 const c = (qtd: number, pago = false, via = false, cota = 10_000): CotaRegistro => ({ qtd, valorDevidoCent: valorDevido(qtd, cota), pago, viaEntregue: via })
 
@@ -32,6 +33,35 @@ describe('cotas e pagamentos (centavos inteiros)', () => {
     expect(validarQtdCotas(6, 15, 20)).toMatch(/Só restam 5/)
     expect(validarQtdCotas(1, 20, 20)).toMatch(/Todas as cotas/)
     for (const q of [0, -1, 1.5, Number.NaN]) expect(validarQtdCotas(q, 0, 20), String(q)).toMatch(/inteiro/)
+  })
+})
+
+describe('fechamento das inscrições de um bolão aberto', () => {
+  it('20 cotas de R$ 100: pode fechar (vetor do SPEC: gasto de R$ 1.974)', () => {
+    const v = verificarFechamento(20, 10_000, REGRAS)
+    expect(v.podeFechar).toBe(true)
+    expect(v.motivo).toBeNull()
+    expect(v.orcamentoCent).toBe(200_000)
+    expect(v.minimoCent).not.toBeNull()
+  })
+  it('poucas cotas ou cotas demais: N fora dos limites das Regras', () => {
+    expect(verificarFechamento(1, 10_000, REGRAS).motivo).toBe('n_invalido')
+    expect(verificarFechamento(0, 10_000, REGRAS).motivo).toBe('n_invalido')
+    expect(verificarFechamento(101, 10_000, REGRAS).motivo).toBe('n_invalido')
+    expect(verificarFechamento(100, 10_000, REGRAS).podeFechar).toBe(true)
+  })
+  it('orçamento abaixo do mínimo para N cotas', () => {
+    // 10 cotas de R$ 3,00 = R$ 30,00: abaixo do mínimo de R$ 70,00 (10 × R$ 7,00)
+    const v = verificarFechamento(10, 300, REGRAS)
+    expect(v.podeFechar).toBe(false)
+    expect(v.motivo).toBe('orcamento_baixo')
+    expect(v.orcamentoCent).toBe(3_000)
+    expect(v.minimoCent).toBeGreaterThan(3_000)
+  })
+  it('limite exato: cota igual à cota mínima por recibo ainda fecha quando o orçamento alcança o menor recibo', () => {
+    const min = verificarFechamento(10, 10_000, REGRAS).minimoCent!
+    expect(verificarFechamento(10, Math.ceil(min / 10), REGRAS).podeFechar).toBe(true)
+    expect(verificarFechamento(10, Math.ceil(min / 10) - 1, REGRAS).podeFechar).toBe(false)
   })
 })
 

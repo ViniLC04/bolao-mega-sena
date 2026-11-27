@@ -1,4 +1,7 @@
 // Cotas, pagamentos e caixinha de um bolão (SPEC seções 2, 11 e 12). Funções puras; dinheiro sempre em centavos inteiros.
+import { nCotasValido, totalMinimo } from './bolao'
+import type { ParamsRegras } from './rules'
+import { simularPorValor } from './simulador'
 
 export interface CotaRegistro {
   /** quantas cotas esta pessoa tem neste bolão */
@@ -63,6 +66,35 @@ export function resumoCotas(cotas: readonly CotaRegistro[], nCotas: number): Res
     vendidoCent: vendido,
     registros: cotas.length,
   }
+}
+
+export type MotivoFechamento = 'n_invalido' | 'sem_recibo' | 'orcamento_baixo'
+
+export interface VerificacaoFechamento {
+  /** número de cotas que o bolão teria ao fechar (= cotas cadastradas) */
+  n: number
+  /** orçamento = N × valor da cota, em centavos */
+  orcamentoCent: number
+  /** menor total de recibo possível para N cotas (null se N é inválido ou não há recibo) */
+  minimoCent: number | null
+  podeFechar: boolean
+  /** por que não pode fechar (null quando pode) */
+  motivo: MotivoFechamento | null
+}
+
+/**
+ * Bolão aberto: dá para fechar as inscrições com as cotas de hoje? N precisa estar entre os limites das Regras e
+ * o orçamento (N × cota) precisa alcançar o menor recibo possível para N cotas. Dinheiro em centavos inteiros.
+ */
+export function verificarFechamento(vendidas: number, cotaCent: number, r: ParamsRegras): VerificacaoFechamento {
+  const orcamentoCent = vendidas * cotaCent
+  if (!nCotasValido(vendidas, r)) return { n: vendidas, orcamentoCent, minimoCent: null, podeFechar: false, motivo: 'n_invalido' }
+  const min = totalMinimo(vendidas, r)
+  if (!min) return { n: vendidas, orcamentoCent, minimoCent: null, podeFechar: false, motivo: 'sem_recibo' }
+  if (!simularPorValor({ n: vendidas, cotaBaseCent: cotaCent, cobranca: 'cota_fixa' }, r)) {
+    return { n: vendidas, orcamentoCent, minimoCent: min.total, podeFechar: false, motivo: 'orcamento_baixo' }
+  }
+  return { n: vendidas, orcamentoCent, minimoCent: min.total, podeFechar: true, motivo: null }
 }
 
 export interface ResumoCaixinha {
