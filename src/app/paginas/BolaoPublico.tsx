@@ -56,8 +56,10 @@ export function BolaoPublico() {
 
   const c = contagemRegressiva(params.data_limite_aposta, agora)
   const congelado = resumo.status === 'congelado'
-  const pct = resumo.n_cotas > 0 ? resumo.cotas_vendidas / resumo.n_cotas : 0
-  const livres = resumo.n_cotas - resumo.cotas_vendidas
+  const n = resumo.n_cotas // vazio enquanto as inscrições estão abertas
+  const aberto = resumo.status === 'aberto'
+  const pct = n !== null && n > 0 ? resumo.cotas_vendidas / n : 0
+  const livres = n !== null ? n - resumo.cotas_vendidas : 0
   const aReceber = resumo.previsto_cent - resumo.arrecadado_cent
   const recibos = jogos ? [...new Set(jogos.map((j) => j.recibo_ordem))].sort((x, y) => x - y) : []
 
@@ -67,6 +69,11 @@ export function BolaoPublico() {
         <Simbolo nome="neko" tamanho={56} />
         <h1>{resumo.nome}</h1>
         <p className="lema">Concurso {resumo.concurso_alvo}</p>
+        {aberto && (
+          <p className="prazo" style={{ marginTop: 0, marginBottom: 6 }}>
+            Inscrições abertas{resumo.inscricoes_ate ? <> até <strong>{formatarDataHoraSP(resumo.inscricoes_ate)}</strong></> : ''}
+          </p>
+        )}
         <p className="prazo">
           Prazo das apostas: <strong>{formatarDataHoraSP(params.data_limite_aposta)}</strong> · {c.encerrado ? 'encerrado' : `faltam ${c.dias} dia(s) e ${c.horas} h`}
         </p>
@@ -77,13 +84,22 @@ export function BolaoPublico() {
       <div className="grade" style={{ marginTop: 14 }}>
         <section className="card">
           <h2>Cotas vendidas</h2>
-          <p className="grande">
-            {formatarInteiro(resumo.cotas_vendidas)} de {formatarInteiro(resumo.n_cotas)}
-          </p>
-          <div className="barra" role="progressbar" aria-valuemin={0} aria-valuemax={resumo.n_cotas} aria-valuenow={resumo.cotas_vendidas} aria-label="Cotas vendidas">
-            <div style={{ width: `${Math.min(100, pct * 100)}%` }} />
-          </div>
-          <p className="muted pequeno">{livres > 0 ? `${formatarInteiro(livres)} cota(s) ainda livre(s)` : 'Todas as cotas foram vendidas'}</p>
+          {n === null ? (
+            <>
+              <p className="grande">{formatarInteiro(resumo.cotas_vendidas)}</p>
+              <p className="muted pequeno">Ainda não há número fixo de cotas: ele será definido quando as inscrições fecharem.</p>
+            </>
+          ) : (
+            <>
+              <p className="grande">
+                {formatarInteiro(resumo.cotas_vendidas)} de {formatarInteiro(n)}
+              </p>
+              <div className="barra" role="progressbar" aria-valuemin={0} aria-valuemax={n} aria-valuenow={resumo.cotas_vendidas} aria-label="Cotas vendidas">
+                <div style={{ width: `${Math.min(100, pct * 100)}%` }} />
+              </div>
+              <p className="muted pequeno">{livres > 0 ? `${formatarInteiro(livres)} cota(s) ainda livre(s)` : 'Todas as cotas foram vendidas'}</p>
+            </>
+          )}
         </section>
         <section className="card">
           <h2>Arrecadado</h2>
@@ -111,7 +127,7 @@ export function BolaoPublico() {
               <tr>
                 <th>Participante</th>
                 <th>Cotas</th>
-                <th>Parte do bolão</th>
+                <th>{aberto ? 'Parte até agora' : 'Parte do bolão'}</th>
               </tr>
             </thead>
             <tbody>
@@ -121,7 +137,7 @@ export function BolaoPublico() {
                     <strong>{p.nome}</strong>
                   </td>
                   <td>{formatarInteiro(p.qtd)}</td>
-                  <td>{formatarPct(resumo.n_cotas > 0 ? p.qtd / resumo.n_cotas : 0, 1)}</td>
+                  <td>{formatarPct((n ?? resumo.cotas_vendidas) > 0 ? p.qtd / (n ?? resumo.cotas_vendidas) : 0, 1)}</td>
                 </tr>
               ))}
             </tbody>
@@ -132,7 +148,11 @@ export function BolaoPublico() {
 
       <h2>Jogos</h2>
       {!congelado ? (
-        <p className="muted">Os jogos ainda estão sendo preparados. Quando forem congelados, aparecem aqui.</p>
+        <p className="muted">
+          {aberto
+            ? 'Os jogos serão gerados depois que as inscrições fecharem (com o número de cotas definido). Quando forem congelados, aparecem aqui.'
+            : 'Os jogos ainda estão sendo preparados. Quando forem congelados, aparecem aqui.'}
+        </p>
       ) : (
         <section className="card">
           <p className="muted pequeno">
@@ -164,7 +184,7 @@ export function BolaoPublico() {
                 )
               })}
               <ChancesBolao jogos={jogos.map((j) => ({ recibo: j.recibo_ordem, dezenas: j.dezenas }))} />
-              <ConferenciaBolao jogos={jogos.map((j) => ({ recibo: j.recibo_ordem, dezenas: j.dezenas }))} nCotas={resumo.n_cotas} concursoAlvo={resumo.concurso_alvo} />
+              <ConferenciaBolao jogos={jogos.map((j) => ({ recibo: j.recibo_ordem, dezenas: j.dezenas }))} nCotas={n ?? resumo.cotas_vendidas} concursoAlvo={resumo.concurso_alvo} />
             </div>
           )}
         </section>

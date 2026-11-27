@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { apagarRascunho, carregarBolao, carregarBoloesCongelados, congelarBolao, listarBoloes, type BolaoLinha, type ReciboDet } from '../../data/boloes'
+import { apagarRascunho, carregarBolao, carregarBoloesCongelados, congelarBolao, criarBolaoAberto, listarBoloes, type BolaoLinha, type ReciboDet } from '../../data/boloes'
 import { auditarBoloes, type RelatorioAuditoria } from '../../engine/auditoria'
+import { FaseDoBolao } from '../BolaoAberto'
 import { ChanceExpansivel } from '../Chance'
-import { formatarDataHoraSP, formatarInteiro, formatarReais } from '../formato'
+import { campoLocalSPParaIso, formatarDataHoraSP, formatarInteiro, formatarReais, parseReais } from '../formato'
 import { descreverRecibo } from '../plano'
 import { useRegras } from '../regras'
 import { ChancesBolao } from '../ChancesBolao'
@@ -16,7 +17,81 @@ import { CotasBolao } from './CotasBolao'
 const dezenaTexto = (d: number) => String(d).padStart(2, '0')
 
 function Status({ s }: { s: BolaoLinha['status'] }) {
-  return <span className="tag" style={s === 'rascunho' ? { background: 'var(--muted)' } : undefined}>{s === 'rascunho' ? 'rascunho' : 'congelado'}</span>
+  const rotulo = s === 'aberto' ? 'inscrições abertas' : s === 'rascunho' ? 'rascunho' : 'congelado'
+  return <span className="tag" style={s !== 'congelado' ? { background: s === 'aberto' ? 'var(--ouro)' : 'var(--muted)' } : undefined}>{rotulo}</span>
+}
+
+/** Formulário "Novo bolão aberto": só o valor da cota e a data limite de inscrição; o número de cotas vem depois. */
+function NovoBolaoAberto({ concursoPadrao }: { concursoPadrao: number }) {
+  const navigate = useNavigate()
+  const [aberto, setAberto] = useState(false)
+  const [nome, setNome] = useState('')
+  const [cota, setCota] = useState('100,00')
+  const [ate, setAte] = useState('')
+  const [concurso, setConcurso] = useState(String(concursoPadrao))
+  const [erro, setErro] = useState<string | null>(null)
+  const [ocupado, setOcupado] = useState(false)
+
+  async function criar() {
+    const cotaCent = parseReais(cota)
+    const iso = campoLocalSPParaIso(ate)
+    const conc = /^\d+$/.test(concurso.trim()) ? Number(concurso.trim()) : NaN
+    if (nome.trim().length < 2) return setErro('Dê um nome ao bolão.')
+    if (cotaCent === null || cotaCent <= 0) return setErro('Informe o valor da cota em reais (ex.: 100,00).')
+    if (!iso) return setErro('Escolha a data e a hora até quando as inscrições ficam abertas.')
+    if (!Number.isInteger(conc) || conc < 1) return setErro('Informe o número do concurso.')
+    setOcupado(true)
+    setErro(null)
+    const r = await criarBolaoAberto({ concurso: conc, nome: nome.trim(), cotaCent, inscricoesAte: iso })
+    setOcupado(false)
+    if (r.erro || !r.id) setErro(r.erro)
+    else navigate(`/boloes/${r.id}`)
+  }
+
+  if (!aberto) {
+    return (
+      <p>
+        <button type="button" className="primario" onClick={() => setAberto(true)}>
+          + Novo bolão aberto (só o valor da cota)
+        </button>
+      </p>
+    )
+  }
+  return (
+    <section className="card" style={{ marginBottom: 14 }}>
+      <h2>Novo bolão aberto</h2>
+      <p className="muted pequeno">
+        Você ainda não sabe quantas cotas serão. Defina só o <strong>valor da cota</strong> e até quando as pessoas podem entrar. Depois da data, você fecha as inscrições e o app calcula os recibos e gera os jogos com o número de cotas que foi vendido.
+      </p>
+      <div className="campos">
+        <label className="campo">
+          <span>Nome do bolão</span>
+          <input value={nome} onChange={(e) => setNome(e.target.value)} maxLength={80} placeholder="Bolão da Virada 3100" />
+        </label>
+        <label className="campo">
+          <span>Valor da cota (R$)</span>
+          <input value={cota} onChange={(e) => setCota(e.target.value)} inputMode="decimal" />
+        </label>
+        <label className="campo">
+          <span>Inscrições até</span>
+          <input type="datetime-local" value={ate} onChange={(e) => setAte(e.target.value)} />
+        </label>
+        <label className="campo">
+          <span>Concurso</span>
+          <input value={concurso} onChange={(e) => setConcurso(e.target.value)} inputMode="numeric" />
+        </label>
+      </div>
+      {erro && <p className="erro">{erro}</p>}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" className="primario" disabled={ocupado} onClick={() => void criar()}>
+          {ocupado ? 'Criando…' : 'Criar bolão aberto'}
+        </button>
+        <button type="button" className="secundario" disabled={ocupado} onClick={() => setAberto(false)}>
+          Cancelar
+        </button>
+      </div>
+    </section>
+  )
 }
 
 export function Boloes() {
@@ -51,7 +126,10 @@ export function Boloes() {
   return (
     <>
       <h1>Bolões</h1>
-      <p className="muted">Para criar um bolão: simule em <Link to="/simulador">Simulador</Link>, gere os jogos em <Link to="/gerador">Gerador</Link> e clique em “Salvar como rascunho”.</p>
+      <p className="muted">
+        Dois jeitos de criar: <strong>bolão aberto</strong> (você só sabe o valor da cota; cadastra as pessoas e depois fecha as inscrições) ou o caminho direto: simule em <Link to="/simulador">Simulador</Link>, gere os jogos em <Link to="/gerador">Gerador</Link> e clique em “Salvar como rascunho”.
+      </p>
+      <NovoBolaoAberto concursoPadrao={concurso} />
       {erro && <p className="erro">{erro}</p>}
 
       {lista === null ? (
@@ -77,7 +155,7 @@ export function Boloes() {
                     <Link to={`/boloes/${b.id}`}>{b.nome}</Link>
                   </td>
                   <td>{b.concurso_alvo}</td>
-                  <td>{b.n_cotas}</td>
+                  <td>{b.n_cotas ?? '—'}</td>
                   <td>
                     <Status s={b.status} />
                   </td>
@@ -196,6 +274,7 @@ export function BolaoDetalhe() {
   const totalCent = recibos.reduce((s, r) => s + r.total_cent, 0)
   const totalJogos = recibos.reduce((s, r) => s + r.jogos.length, 0)
   const congelado = bolao.status === 'congelado'
+  const temJogos = recibos.length > 0
 
   return (
     <>
@@ -209,7 +288,11 @@ export function BolaoDetalhe() {
       <section className="card">
         <ul className="lista-simples">
           <li>Concurso-alvo: <strong>{bolao.concurso_alvo}</strong></li>
-          <li>Cotas: <strong>{bolao.n_cotas}</strong> · jogos: <strong>{totalJogos}</strong> · custo das apostas: <strong>{formatarReais(totalCent)}</strong></li>
+          {bolao.n_cotas === null ? (
+            <li>Cota de <strong>{bolao.cota_base_cent !== null ? formatarReais(bolao.cota_base_cent) : '—'}</strong> · o número de cotas e os jogos serão definidos ao fechar as inscrições</li>
+          ) : (
+            <li>Cotas: <strong>{bolao.n_cotas}</strong> · jogos: <strong>{totalJogos}</strong> · custo das apostas: <strong>{formatarReais(totalCent)}</strong></li>
+          )}
           <li>Criado em {formatarDataHoraSP(bolao.criado_em)}{bolao.semente !== null && ` · semente ${bolao.semente}`}</li>
           {congelado && bolao.congelado_em && <li>Congelado em <strong>{formatarDataHoraSP(bolao.congelado_em)}</strong></li>}
           {congelado && bolao.hash && (
@@ -223,7 +306,9 @@ export function BolaoDetalhe() {
       {erro && <p className="erro">{erro}</p>}
       {mensagem && <p className="ok">{mensagem}</p>}
 
-      {!congelado && (
+      <FaseDoBolao bolao={bolao} temJogos={temJogos} aoMudar={() => void recarregar()} />
+
+      {!congelado && temJogos && (
         <section className="card" style={{ marginTop: 12 }}>
           <h2>Congelar o bolão</h2>
           <p className="aviso">
@@ -248,16 +333,20 @@ export function BolaoDetalhe() {
 
       <CotasBolao bolao={bolao} custoCent={totalCent} />
 
-      <ChancesBolao jogos={recibos.flatMap((r, i) => r.jogos.map((j) => ({ recibo: i, dezenas: j.dezenas })))} />
+      {temJogos && bolao.n_cotas !== null && (
+        <>
+          <ChancesBolao jogos={recibos.flatMap((r, i) => r.jogos.map((j) => ({ recibo: i, dezenas: j.dezenas })))} />
 
-      <ConferenciaBolao
-        jogos={recibos.flatMap((r, i) => r.jogos.map((j) => ({ recibo: i, dezenas: j.dezenas })))}
-        nCotas={bolao.n_cotas}
-        concursoAlvo={bolao.concurso_alvo}
-        participantes={partic}
-      />
+          <ConferenciaBolao
+            jogos={recibos.flatMap((r, i) => r.jogos.map((j) => ({ recibo: i, dezenas: j.dezenas })))}
+            nCotas={bolao.n_cotas}
+            concursoAlvo={bolao.concurso_alvo}
+            participantes={partic}
+          />
+        </>
+      )}
 
-      <h2>Jogos</h2>
+      {temJogos && <h2>Jogos</h2>}
       {recibos.map((r) => (
         <section className="card" key={r.ordem} style={{ marginBottom: 12 }}>
           <h2>

@@ -40,6 +40,19 @@ Este manual explica, passo a passo, tudo o que você faz no app. Você não prec
 2. Se aparecer o aviso amarelo "Ainda não há regras gravadas no banco", clique em **Gravar as regras padrão no banco**.
 3. Confira a **data limite das apostas** (31/12/2026 às 22h). Se a Caixa mudar o horário, crie uma nova versão com a data nova.
 
+## 3b. Bolão aberto (quando você ainda não sabe quantas cotas serão)
+
+Use este caminho se você só tem o **valor da cota** e vai cadastrando as pessoas conforme elas confirmam. O número de cotas e os jogos só são definidos **depois** de fechar as inscrições.
+
+1. Em **Bolões**, clique em **+ Novo bolão aberto**. Preencha o nome, o **valor da cota** (por exemplo 100,00), até quando as inscrições ficam abertas (por exemplo 20/12) e o concurso. Clique em **Criar bolão aberto**.
+2. No bolão, em **Cotas e pagamentos**, cadastre as pessoas conforme confirmam. Não há limite de cotas enquanto estiver aberto. Depois da data de inscrição o app recusa cotas novas; você pode **mudar a data** no quadro "Inscrições abertas".
+3. Mande o **link público do bolão** para o grupo (seção 10b): ele mostra quem entrou e quantas cotas, sem o número total de cotas por enquanto.
+4. Quando passar a data, confira os pagamentos e clique em **Fechar inscrições e gerar os jogos**. O app mostra antes o orçamento (cotas × valor da cota) e se ele alcança o menor recibo possível. O número de cotas passa a ser o total cadastrado.
+5. O **Simulador abre já preenchido** (número de cotas e valor da cota do bolão). Clique em **Usar este plano e gerar os jogos do bolão**, gere os jogos e clique em **Salvar os jogos no bolão**. A sobra do orçamento vai para a caixinha.
+6. Daí em diante é como nos outros bolões: revisar, **congelar**, apostar na Caixa e anexar as fotos.
+
+Se você fechou cedo demais, clique em **Reabrir as inscrições** (só enquanto os jogos ainda não foram salvos).
+
 ## 4. Concursos
 
 1. No menu, abra **Concursos**.

@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { BotaoCasas, Chance, ChanceExpansivel } from '../Chance'
-import { formatarInteiro, formatarReais, parseReais } from '../formato'
+import { formatarInteiro, formatarReais, formatarReaisCampo, parseReais } from '../formato'
 import { useCasas } from '../useCasas'
-import { descreverRecibo, planoDeLinha } from '../plano'
+import { descreverRecibo, planoDeLinha, type PreviaSimulador } from '../plano'
 import { useRegras } from '../regras'
 import { useProbabilidades } from '../useProbabilidades'
 import {
@@ -25,7 +25,7 @@ const MODOS: { id: Modo; rotulo: string }[] = [
   { id: 'inverso', rotulo: 'Inverso (orçamento)' },
 ]
 
-function Resumo({ linha, cotaBaseCent }: { linha: LinhaSimulacao; cotaBaseCent: number | null }) {
+function Resumo({ linha, cotaBaseCent, bolaoId }: { linha: LinhaSimulacao; cotaBaseCent: number | null; bolaoId?: string }) {
   const navigate = useNavigate()
   const { casas, maisCasas } = useCasas()
   const celula = (f: EstimativaFaixa) => <Chance p={f.p} casas={casas} margem={f.margem95} />
@@ -130,8 +130,8 @@ function Resumo({ linha, cotaBaseCent }: { linha: LinhaSimulacao; cotaBaseCent: 
       )}
 
       <p style={{ marginTop: 14 }}>
-        <button type="button" className="primario" onClick={() => navigate('/gerador', { state: { plano: planoDeLinha(linha, cotaBaseCent) } })}>
-          Usar este plano no gerador de jogos
+        <button type="button" className="primario" onClick={() => navigate('/gerador', { state: { plano: { ...planoDeLinha(linha, cotaBaseCent), bolaoId } } })}>
+          {bolaoId ? 'Usar este plano e gerar os jogos do bolão' : 'Usar este plano no gerador de jogos'}
         </button>
       </p>
     </section>
@@ -140,15 +140,21 @@ function Resumo({ linha, cotaBaseCent }: { linha: LinhaSimulacao; cotaBaseCent: 
 
 export function Simulador() {
   const { params } = useRegras()
+  // Vindo de um bolão que fechou as inscrições: N e cota já definidos, simulação já feita
+  const previa = (useLocation().state as { previa?: PreviaSimulador } | null)?.previa ?? null
   const [modo, setModo] = useState<Modo>('valor')
-  const [n, setN] = useState('20')
-  const [cotaBase, setCotaBase] = useState('100,00')
+  const [n, setN] = useState(previa ? String(previa.n) : '20')
+  const [cotaBase, setCotaBase] = useState(previa ? formatarReaisCampo(previa.cotaBaseCent) : '100,00')
   const [orcamento, setOrcamento] = useState('840,00')
   const [perfil, setPerfil] = useState<PerfilSimulador>('menos_recibos')
   const [cobranca, setCobranca] = useState<ModoCobranca>('cota_fixa')
-  const [linhas, setLinhas] = useState<LinhaSimulacao[] | null>(null)
+  const [linhas, setLinhas] = useState<LinhaSimulacao[] | null>(() => {
+    if (!previa) return null
+    const l = simularPorValor({ n: previa.n, cotaBaseCent: previa.cotaBaseCent, perfil: 'menos_recibos', cobranca: 'cota_fixa' }, params)
+    return l ? [l] : null
+  })
   const [escolhida, setEscolhida] = useState(0)
-  const [cotaBaseUsada, setCotaBaseUsada] = useState<number | null>(null)
+  const [cotaBaseUsada, setCotaBaseUsada] = useState<number | null>(previa?.cotaBaseCent ?? null)
   const [maiorN, setMaiorN] = useState<number | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [chave, setChave] = useState(0) // zera as chances calculadas quando se simula de novo
@@ -204,13 +210,21 @@ export function Simulador() {
       <h1>Simulador</h1>
       <p className="muted">Veja quanto custa, quantos jogos entram e quais as chances, antes de criar o bolão. Só o ADM vê esta tela.</p>
 
-      <div className="menu" role="tablist" aria-label="Modo do simulador" style={{ position: 'static', borderRadius: 999, border: '1px solid var(--borda)', marginBottom: 12 }}>
-        {MODOS.map((m) => (
-          <a key={m.id} href="#" role="tab" aria-selected={modo === m.id} className={modo === m.id ? 'ativo' : undefined} onClick={(e) => { e.preventDefault(); setModo(m.id); setLinhas(null); setErro(null) }}>
-            {m.rotulo}
-          </a>
-        ))}
-      </div>
+      {previa && (
+        <p className="aviso">
+          Simulação do bolão <strong>{previa.nome}</strong>: as inscrições fecharam com <strong>{previa.n} cotas de {formatarReais(previa.cotaBaseCent)}</strong> (orçamento de {formatarReais(previa.n * previa.cotaBaseCent)}). Os jogos que você gerar serão salvos neste bolão.
+          {!linhas && ' Com esse orçamento não cabe um recibo válido: volte ao bolão e reabra as inscrições.'}
+        </p>
+      )}
+      {!previa && (
+        <div className="menu" role="tablist" aria-label="Modo do simulador" style={{ position: 'static', borderRadius: 999, border: '1px solid var(--borda)', marginBottom: 12 }}>
+          {MODOS.map((m) => (
+            <a key={m.id} href="#" role="tab" aria-selected={modo === m.id} className={modo === m.id ? 'ativo' : undefined} onClick={(e) => { e.preventDefault(); setModo(m.id); setLinhas(null); setErro(null) }}>
+              {m.rotulo}
+            </a>
+          ))}
+        </div>
+      )}
 
       <form
         className="card"
@@ -223,14 +237,14 @@ export function Simulador() {
           {modo !== 'inverso' && (
             <label className="campo">
               <span>Número de cotas (N)</span>
-              <input inputMode="numeric" value={n} onChange={(e) => setN(e.target.value)} />
+              <input inputMode="numeric" value={n} onChange={(e) => setN(e.target.value)} readOnly={Boolean(previa)} />
               <small className="muted">De {params.bolao_cotas_min} a {params.bolao_cotas_max}</small>
             </label>
           )}
           {modo === 'valor' && (
             <label className="campo">
               <span>Cota-base (R$)</span>
-              <input inputMode="decimal" value={cotaBase} onChange={(e) => setCotaBase(e.target.value)} />
+              <input inputMode="decimal" value={cotaBase} onChange={(e) => setCotaBase(e.target.value)} readOnly={Boolean(previa)} />
               <small className="muted">Arrecadação = N × cota-base</small>
             </label>
           )}
@@ -255,7 +269,7 @@ export function Simulador() {
           {modo === 'valor' && (
             <label className="campo">
               <span>Cobrança</span>
-              <select value={cobranca} onChange={(e) => setCobranca(e.target.value as ModoCobranca)}>
+              <select value={cobranca} onChange={(e) => setCobranca(e.target.value as ModoCobranca)} disabled={Boolean(previa)}>
                 <option value="cota_fixa">Cota fixa (a sobra vai para a caixinha)</option>
                 <option value="cota_teto">Cota-teto (cobra gasto ÷ N, arredondado)</option>
               </select>
@@ -291,7 +305,7 @@ export function Simulador() {
         </section>
       )}
 
-      {atual && <Resumo key={`${chave}-${escolhida}`} linha={atual} cotaBaseCent={cotaBaseUsada} />}
+      {atual && <Resumo key={`${chave}-${escolhida}`} linha={atual} cotaBaseCent={cotaBaseUsada} bolaoId={previa?.bolaoId} />}
     </>
   )
 }

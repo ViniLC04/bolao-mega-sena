@@ -30,9 +30,10 @@ export interface ResumoBolaoPorLink {
   bolao_id: string
   nome: string
   concurso_alvo: number
-  n_cotas: number
+  /** null enquanto as inscrições estão abertas */
+  n_cotas: number | null
   cota_cent: number | null
-  status: 'rascunho' | 'congelado'
+  status: 'aberto' | 'rascunho' | 'congelado'
   congelado_em: string | null
   hash: string | null
   jogos: number
@@ -42,6 +43,7 @@ export interface ResumoBolaoPorLink {
   previsto_cent: number
   arrecadado_cent: number
   vias_entregues: number
+  inscricoes_ate: string | null
 }
 
 /** Quem está no bolão: SÓ o primeiro nome (homônimos numerados) e as cotas. */
@@ -70,8 +72,8 @@ export interface MinhaParticipacaoLinha {
   bolao_id: string
   bolao_nome: string
   concurso_alvo: number
-  n_cotas: number
-  status: 'rascunho' | 'congelado'
+  n_cotas: number | null
+  status: 'aberto' | 'rascunho' | 'congelado'
   congelado_em: string | null
   hash: string | null
   qtd: number
@@ -80,6 +82,7 @@ export interface MinhaParticipacaoLinha {
   via_entregue: boolean
   custo_cent: number
   cota_cent: number | null
+  inscricoes_ate: string | null
 }
 
 /** Link pessoal: só os bolões da própria pessoa. Link errado ou desligado = lista vazia. */

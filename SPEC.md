@@ -127,6 +127,8 @@ Três modos, todos com a tabela "composição → gasto, sobra, cota final, jogo
 
 Requisito: o simulador usa programação dinâmica sobre os totais possíveis (todos múltiplos de 600 centavos), não força bruta.
 
+**Bolão aberto (decisão da Fase 7):** o ADM pode criar o bolão só com o **valor da cota** e uma **data limite de inscrição** (status `aberto`, sem N e sem jogos), cadastrar as pessoas e, depois da data, **fechar as inscrições**: N passa a ser o total de cotas cadastradas (dentro dos limites das regras) e o bolão segue como rascunho. O Simulador abre no modo "Por valor", com N, `cota_base` igual ao valor da cota e **cota fixa** (a sobra vai para a caixinha); os jogos gerados são salvos no próprio bolão, que depois é congelado. As inscrições podem ser reabertas enquanto não houver jogos salvos.
+
 ---
 
 ## 5. Gerador de jogos (somente ADM)

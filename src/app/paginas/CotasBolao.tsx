@@ -20,7 +20,9 @@ import { useRegras } from '../regras'
 
 function cotaCobrada(b: BolaoLinha): number | null {
   const v = (b.regras_snapshot as { plano?: { cotaCobradaCent?: unknown } } | null)?.plano?.cotaCobradaCent
-  return typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null
+  if (typeof v === 'number' && Number.isInteger(v) && v > 0) return v
+  // bolão aberto (ainda sem plano): o valor da cota é o que foi combinado na criação
+  return b.cota_base_cent !== null && b.cota_base_cent > 0 ? b.cota_base_cent : null
 }
 
 export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent: number }) {
@@ -68,16 +70,18 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
 
   const resumo = resumoCotas(
     cotas.map((c) => ({ qtd: c.qtd, valorDevidoCent: c.valor_devido_cent, pago: c.pago, viaEntregue: c.via_entregue })),
-    bolao.n_cotas,
+    bolao.n_cotas ?? 0,
   )
-  const k = cota !== null ? caixinha(bolao.n_cotas, cota, custoCent, mov.map((m) => m.valor_cent)) : null
-  const encerrado = contagemRegressiva(params.data_limite_aposta, agora).encerrado
+  const aberto = bolao.n_cotas === null // inscrições abertas: ainda não existe N
+  const k = cota !== null && bolao.n_cotas !== null && custoCent > 0 ? caixinha(bolao.n_cotas, cota, custoCent, mov.map((m) => m.valor_cent)) : null
+  const inscricoesEncerradas = bolao.status === 'aberto' && bolao.inscricoes_ate !== null && agora > Date.parse(bolao.inscricoes_ate)
+  const encerrado = contagemRegressiva(params.data_limite_aposta, agora).encerrado || inscricoesEncerradas
   const jaTem = new Set(cotas.map((c) => c.participante_id))
 
   async function incluir() {
     if (cota === null) return
     const q = Number(qtd)
-    const e = validarQtdCotas(q, resumo.vendidas, bolao.n_cotas)
+    const e = aberto ? (Number.isInteger(q) && q >= 1 ? null : 'A quantidade de cotas deve ser um número inteiro, de 1 em diante.') : validarQtdCotas(q, resumo.vendidas, bolao.n_cotas ?? 0)
     if (e) return setErro(e)
     setOcupado(true)
     setErro(null)
@@ -152,10 +156,8 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
       <div className="grade">
         <section className="card">
           <h2>Cotas vendidas</h2>
-          <p className="grande">
-            {formatarInteiro(resumo.vendidas)} de {formatarInteiro(resumo.nCotas)}
-          </p>
-          <p className="muted pequeno">{formatarInteiro(resumo.livres)} livre(s)</p>
+          <p className="grande">{aberto ? formatarInteiro(resumo.vendidas) : `${formatarInteiro(resumo.vendidas)} de ${formatarInteiro(resumo.nCotas)}`}</p>
+          <p className="muted pequeno">{aberto ? 'sem limite enquanto as inscrições estão abertas' : `${formatarInteiro(resumo.livres)} livre(s)`}</p>
         </section>
         <section className="card">
           <h2>Pagas</h2>
@@ -179,7 +181,8 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
           Valor por cota: <strong>{formatarReais(cota)}</strong>. Prazo para novas cotas: <strong>{formatarDataHoraSP(params.data_limite_aposta)}</strong> (Brasília).
         </p>
       )}
-      {encerrado && <p className="aviso">O prazo das apostas encerrou. Para incluir cotas, prorrogue a data limite em Regras (nova versão).</p>}
+      {inscricoesEncerradas && <p className="aviso">O prazo de inscrição deste bolão terminou. Para incluir mais cotas, mude a data de inscrição no quadro de cima; ou feche as inscrições.</p>}
+      {!inscricoesEncerradas && encerrado && <p className="aviso">O prazo das apostas encerrou. Para incluir cotas, prorrogue a data limite em Regras (nova versão).</p>}
 
       {cota !== null && (
         <section className="card" style={{ marginTop: 12 }}>
@@ -212,7 +215,7 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
           <p className="muted pequeno">
             Valor devido: <strong>{Number.isInteger(Number(qtd)) && Number(qtd) > 0 ? formatarReais(valorDevido(Number(qtd), cota)) : '—'}</strong>
           </p>
-          <button type="button" className="primario" disabled={ocupado || encerrado || resumo.livres === 0} onClick={() => void incluir()}>
+          <button type="button" className="primario" disabled={ocupado || encerrado || (!aberto && resumo.livres === 0)} onClick={() => void incluir()}>
             Incluir cotas
           </button>
         </section>
@@ -260,7 +263,7 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
         <section className="card">
           <ul className="lista-simples">
             <li>
-              Sobra prevista do arredondamento da cota ({formatarInteiro(bolao.n_cotas)} × {formatarReais(cota!)} − {formatarReais(custoCent)}): <strong>{formatarReais(k.sobraPrevistaCent)}</strong>
+              Sobra prevista do arredondamento da cota ({formatarInteiro(bolao.n_cotas ?? 0)} ×{formatarReais(cota!)} − {formatarReais(custoCent)}): <strong>{formatarReais(k.sobraPrevistaCent)}</strong>
             </li>
             <li>
               Lançamentos manuais: <strong>{formatarReais(k.movimentosCent)}</strong>

@@ -213,6 +213,10 @@ async function main() {
     })
     const regJson = json(reg) as { ok?: boolean } | null
     ok(reg.status === 200 && regJson?.ok === false, 'registrar_concurso recusa um concurso que já existe', `HTTP ${reg.status} ${reg.texto.slice(0, 60)}`)
+    for (const fn of ['fechar_inscricoes', 'reabrir_inscricoes']) {
+      const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, { p_bolao: bolaoId })
+      ok(r.status >= 400, `${fn}() é recusada`, `HTTP ${r.status}`)
+    }
     for (const fn of ['confirmar_concurso', 'rejeitar_concurso']) {
       const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, { p_numero: 1 })
       ok(r.status >= 400, `${fn}() é recusada`, `HTTP ${r.status}`)

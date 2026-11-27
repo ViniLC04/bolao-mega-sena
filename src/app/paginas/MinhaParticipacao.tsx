@@ -73,11 +73,16 @@ function Cartao({ l, token }: { l: MinhaParticipacaoLinha; token: string }) {
     <section className="card" style={{ marginTop: 12 }}>
       <h2 style={{ color: 'inherit', fontSize: '1.15rem' }}>{l.bolao_nome}</h2>
       <p className="muted pequeno">
-        Concurso {l.concurso_alvo} · {congelado && l.congelado_em ? `jogos congelados em ${formatarDataHoraSP(l.congelado_em)}` : 'os jogos ainda estão sendo preparados'}
+        Concurso {l.concurso_alvo} ·{' '}
+        {congelado && l.congelado_em
+          ? `jogos congelados em ${formatarDataHoraSP(l.congelado_em)}`
+          : l.status === 'aberto'
+            ? `inscrições abertas${l.inscricoes_ate ? ` até ${formatarDataHoraSP(l.inscricoes_ate)}` : ''}; os jogos saem depois que fecharem`
+            : 'os jogos ainda estão sendo preparados'}
       </p>
       <ul className="lista-simples">
         <li>
-          Suas cotas: <strong>{l.qtd}</strong> de {l.n_cotas}
+          Suas cotas: <strong>{l.qtd}</strong>{l.n_cotas !== null && <> de {l.n_cotas}</>}
           {l.cota_cent !== null && <> (valor por cota: {formatarReais(l.cota_cent)})</>}
         </li>
         <li>
@@ -121,7 +126,7 @@ function Cartao({ l, token }: { l: MinhaParticipacaoLinha; token: string }) {
                 )
               })}
               <ChancesBolao jogos={jogos.map((j) => ({ recibo: j.recibo_ordem, dezenas: j.dezenas }))} />
-              <ConferenciaBolao jogos={jogos.map((j) => ({ recibo: j.recibo_ordem, dezenas: j.dezenas }))} nCotas={l.n_cotas} concursoAlvo={l.concurso_alvo} minhaQtd={l.qtd} />
+              <ConferenciaBolao jogos={jogos.map((j) => ({ recibo: j.recibo_ordem, dezenas: j.dezenas }))} nCotas={l.n_cotas ?? l.qtd} concursoAlvo={l.concurso_alvo} minhaQtd={l.qtd} />
             </>
           )}
         </div>

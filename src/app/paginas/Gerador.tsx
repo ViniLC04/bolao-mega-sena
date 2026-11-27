@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { salvarRascunho } from '../../data/boloes'
+import { anexarJogosAoBolao, salvarRascunho } from '../../data/boloes'
 import { carregarConcursos, carregarViradas, type ConcursoResumo } from '../../data/concursos'
 import { carregarJogosOutrosBoloes, type JogosOutros } from '../../data/jogos'
 import { AVISO_RESTRICAO, type JogoGerado, type Premissas, type Relatorio, type ResultadoGeracao } from '../../engine/gerador'
@@ -178,13 +178,13 @@ export function Gerador() {
 
   async function salvar() {
     if (!plano || !atual) return
-    if (nome.trim().length < 2) {
+    if (!plano.bolaoId && nome.trim().length < 2) {
       setErroSalvar('Dê um nome ao bolão.')
       return
     }
     setSalvando(true)
     setErroSalvar(null)
-    const r = await salvarRascunho({
+    const dados = {
       concurso: concursoAlvo,
       nome: nome.trim(),
       plano,
@@ -193,7 +193,16 @@ export function Gerador() {
       params,
       vigencia: vigenciaEmUso,
       premissas: atual.premissas,
-    })
+    }
+    if (plano.bolaoId) {
+      // bolão que já fechou as inscrições: os jogos vão para ELE (não cria outro bolão)
+      const e = await anexarJogosAoBolao(plano.bolaoId, dados)
+      setSalvando(false)
+      if (e) setErroSalvar(e)
+      else navigate(`/boloes/${plano.bolaoId}`)
+      return
+    }
+    const r = await salvarRascunho(dados)
     setSalvando(false)
     if (r.erro || !r.id) setErroSalvar(r.erro ?? 'Não consegui salvar.')
     else navigate(`/boloes/${r.id}`)
@@ -425,14 +434,20 @@ export function Gerador() {
       {atual && <Resultado plano={plano} atual={atual} ocupado={ocupado} aoTrocar={trocar} aoTravar={alternarTrava} />}
       {atual && (
         <section className="card" style={{ marginTop: 12 }}>
-          <h2>Salvar o bolão</h2>
-          <p className="muted pequeno">Salva como <strong>rascunho</strong>: ainda dá para apagar. Para valer, depois você congela na tela Bolões.</p>
-          <label className="campo">
-            <span>Nome do bolão</span>
-            <input value={nome} onChange={(e) => setNome(e.target.value)} />
-          </label>
+          <h2>{plano.bolaoId ? 'Salvar os jogos neste bolão' : 'Salvar o bolão'}</h2>
+          {plano.bolaoId ? (
+            <p className="muted pequeno">Os jogos ficam no bolão que acabou de fechar as inscrições (com as pessoas e cotas que já estão nele). Ainda dá para gerar de novo; para valer, depois você congela na tela do bolão.</p>
+          ) : (
+            <>
+              <p className="muted pequeno">Salva como <strong>rascunho</strong>: ainda dá para apagar. Para valer, depois você congela na tela Bolões.</p>
+              <label className="campo">
+                <span>Nome do bolão</span>
+                <input value={nome} onChange={(e) => setNome(e.target.value)} />
+              </label>
+            </>
+          )}
           <button type="button" className="primario" disabled={ocupado || salvando} onClick={() => void salvar()}>
-            {salvando ? 'Salvando…' : 'Salvar como rascunho'}
+            {salvando ? 'Salvando…' : plano.bolaoId ? 'Salvar os jogos no bolão' : 'Salvar como rascunho'}
           </button>
           {erroSalvar && <p className="erro">{erroSalvar}</p>}
         </section>

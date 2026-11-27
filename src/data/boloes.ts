@@ -12,15 +12,19 @@ export interface BolaoLinha {
   id: string
   concurso_alvo: number
   nome: string
-  n_cotas: number
+  /** null enquanto o bolão está aberto (o número de cotas só existe ao fechar as inscrições) */
+  n_cotas: number | null
   cota_base_cent: number | null
   modo_cobranca: 'cota_fixa' | 'cota_teto'
-  status: 'rascunho' | 'congelado'
+  status: 'aberto' | 'rascunho' | 'congelado'
   semente: number | null
   criado_em: string
   congelado_em: string | null
   hash: string | null
   regras_snapshot: unknown
+  /** bolão aberto: até quando se aceitam cotas novas */
+  inscricoes_ate: string | null
+  inscricoes_encerradas_em: string | null
 }
 
 export interface JogoDet {
@@ -39,7 +43,8 @@ export interface ReciboDet {
   jogos: JogoDet[]
 }
 
-const COLUNAS = 'id, concurso_alvo, nome, n_cotas, cota_base_cent, modo_cobranca, status, semente, criado_em, congelado_em, hash, regras_snapshot'
+const COLUNAS =
+  'id, concurso_alvo, nome, n_cotas, cota_base_cent, modo_cobranca, status, semente, criado_em, congelado_em, hash, regras_snapshot, inscricoes_ate, inscricoes_encerradas_em'
 
 function erroDoBanco(codigo: string | undefined, texto: string, padrao: string): string {
   if (codigo === '42501' || /row-level security|permission denied/i.test(texto)) return 'Só o ADM pode fazer isso.'
@@ -92,13 +97,22 @@ export async function salvarRascunho(d: DadosRascunho): Promise<{ id: string | n
   if (error || !b) return { id: null, erro: erroDoBanco(error?.code, error?.message ?? '', 'Não consegui salvar o bolão agora.') }
   const id = (b as { id: string }).id
 
-  const desfazer = async (motivo: string) => {
+  const e = await gravarRecibosEJogos(id, d)
+  if (e) {
     await supabase.from('bolaos').delete().eq('id', id)
-    return { id: null, erro: motivo }
+    return { id: null, erro: e }
   }
+  return { id, erro: null }
+}
 
+/** Grava os recibos e os jogos de um bolão. Devolve a mensagem de erro (nada fica pela metade), ou null se deu certo. */
+async function gravarRecibosEJogos(bolaoId: string, d: DadosRascunho): Promise<string | null> {
+  const desfazer = async (motivo: string) => {
+    await supabase.from('recibos').delete().eq('bolao_id', bolaoId) // os jogos saem junto (cascata)
+    return motivo
+  }
   const recibosLinhas = d.plano.recibos.map((r, i) => ({
-    bolao_id: id,
+    bolao_id: bolaoId,
     ordem: i,
     k: r.k,
     g: r.g,
@@ -117,12 +131,89 @@ export async function salvarRascunho(d: DadosRascunho): Promise<{ id: string | n
   })
   const r2 = await supabase.from('jogos').insert(jogosLinhas)
   if (r2.error) return desfazer('Não consegui salvar os jogos. Nada foi gravado.')
-  return { id, erro: null }
+  return null
 }
 
 export async function apagarRascunho(id: string): Promise<string | null> {
-  const { error } = await supabase.from('bolaos').delete().eq('id', id).eq('status', 'rascunho')
-  return error ? erroDoBanco(error.code, error.message, 'Não consegui apagar o rascunho.') : null
+  const { error } = await supabase.from('bolaos').delete().eq('id', id).in('status', ['aberto', 'rascunho'])
+  return error ? erroDoBanco(error.code, error.message, 'Não consegui apagar o bolão. Se ele tem cotas, remova as cotas antes.') : null
+}
+
+// ---------- Bolão aberto: inscrições sem número de cotas; N só existe quando o ADM fecha ----------
+
+export interface DadosBolaoAberto {
+  concurso: number
+  nome: string
+  /** valor da cota, em centavos */
+  cotaCent: number
+  /** até quando aceitar cotas novas (ISO com fuso) */
+  inscricoesAte: string
+}
+
+export async function criarBolaoAberto(d: DadosBolaoAberto): Promise<{ id: string | null; erro: string | null }> {
+  const { data, error } = await supabase
+    .from('bolaos')
+    .insert({
+      concurso_alvo: d.concurso,
+      nome: d.nome,
+      n_cotas: null,
+      cota_base_cent: d.cotaCent,
+      modo_cobranca: 'cota_fixa',
+      status: 'aberto',
+      inscricoes_ate: d.inscricoesAte,
+    })
+    .select('id')
+    .single()
+  if (error || !data) return { id: null, erro: erroDoBanco(error?.code, error?.message ?? '', 'Não consegui criar o bolão agora.') }
+  return { id: (data as { id: string }).id, erro: null }
+}
+
+export async function prorrogarInscricoes(id: string, inscricoesAteIso: string): Promise<string | null> {
+  const { error } = await supabase.from('bolaos').update({ inscricoes_ate: inscricoesAteIso }).eq('id', id).eq('status', 'aberto')
+  return error ? erroDoBanco(error.code, error.message, 'Não consegui mudar a data agora.') : null
+}
+
+function mensagemRegra(codigo: string | undefined, texto: string, padrao: string): string {
+  if (codigo === 'P0001' || codigo === 'P0002') return texto.replace(/^.*?ERROR:\s*/, '')
+  return erroDoBanco(codigo, texto, padrao)
+}
+
+/** Fecha as inscrições: N passa a ser o total de cotas cadastradas e o bolão segue para a geração dos jogos. */
+export async function fecharInscricoes(id: string): Promise<{ n: number | null; erro: string | null }> {
+  const { data, error } = await supabase.rpc('fechar_inscricoes', { p_bolao: id })
+  if (error) return { n: null, erro: mensagemRegra(error.code, error.message, 'Não consegui fechar as inscrições agora.') }
+  return { n: (data as { n_cotas: number }).n_cotas, erro: null }
+}
+
+export async function reabrirInscricoes(id: string): Promise<string | null> {
+  const { error } = await supabase.rpc('reabrir_inscricoes', { p_bolao: id })
+  return error ? mensagemRegra(error.code, error.message, 'Não consegui reabrir as inscrições agora.') : null
+}
+
+/**
+ * Bolão que já fechou as inscrições: grava os recibos e os jogos NELE (não cria outro bolão).
+ * Se já havia jogos salvos (rascunho anterior), eles são substituídos.
+ */
+export async function anexarJogosAoBolao(bolaoId: string, d: DadosRascunho): Promise<string | null> {
+  const atual = await carregarBolao(bolaoId)
+  if (!atual.bolao) return atual.erro ?? 'Bolão não encontrado.'
+  if (atual.bolao.status !== 'rascunho') return 'Só dá para salvar jogos num bolão que fechou as inscrições e ainda não foi congelado.'
+  if (atual.bolao.n_cotas !== d.plano.n) return `Este bolão tem ${atual.bolao.n_cotas} cotas, mas o plano é de ${d.plano.n}. Volte ao bolão e simule de novo.`
+  const { data: versao } = await supabase.from('rules_versions').select('id').eq('vigencia_inicio', d.vigencia).maybeSingle()
+  const up = await supabase
+    .from('bolaos')
+    .update({
+      regras_versao_id: (versao as { id: number } | null)?.id ?? null,
+      regras_snapshot: { vigencia_inicio: d.vigencia, params: d.params, plano: d.plano, premissas: d.premissas },
+      semente: d.semente,
+      cota_base_cent: d.plano.cotaBaseCent,
+      modo_cobranca: d.plano.cobranca,
+    })
+    .eq('id', bolaoId)
+  if (up.error) return erroDoBanco(up.error.code, up.error.message, 'Não consegui atualizar o bolão agora.')
+  const del = await supabase.from('recibos').delete().eq('bolao_id', bolaoId)
+  if (del.error) return 'Não consegui trocar os jogos antigos agora.'
+  return gravarRecibosEJogos(bolaoId, d)
 }
 
 /** Mensagem do servidor (já em português) quando é regra de negócio; senão, uma mensagem genérica. */

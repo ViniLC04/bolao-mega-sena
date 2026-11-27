@@ -9,6 +9,16 @@ export interface PlanoBolao {
   cobranca: ModoCobranca
   gastoCent: number
   cotaCobradaCent: number
+  /** quando o plano é de um bolão que fechou as inscrições: os jogos são salvos NESSE bolão (e não num novo) */
+  bolaoId?: string
+}
+
+/** Entrega do bolão (já com as inscrições fechadas) ao Simulador, que abre preenchido e já simulado. */
+export interface PreviaSimulador {
+  bolaoId: string
+  nome: string
+  n: number
+  cotaBaseCent: number
 }
 
 export function planoDeLinha(l: LinhaSimulacao, cotaBaseCent: number | null): PlanoBolao {
