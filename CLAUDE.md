@@ -59,7 +59,7 @@ Requer Node.js LTS. Rodar na pasta do projeto (`C:\Projetos\bolao-mega-sena`).
 - Testes (uma vez): `npm test` · testes ao salvar: `npm run test:watch`
 - Checar que nenhum dado/segredo está no Git: `npm run checar-segredos`
 - Gerar build: `npm run build`
-- Publicar: (definir na Fase 5 — Cloudflare Pages)
+- Publicar (Cloudflare Pages, projeto `bolao-mega-virada`, https://bolao-mega-virada.pages.dev): `npm.cmd run build`, depois `$env:NODE_USE_SYSTEM_CA='1'; npx.cmd wrangler pages deploy dist --project-name bolao-mega-virada --branch main --commit-dirty=true`. O build embute só as chaves `VITE_*` (públicas); a chave secreta nunca entra. Teste de segurança do banco: `$env:NODE_USE_SYSTEM_CA='1'; node scripts/testar-rls.mts`. Ícones: `node scripts/gerar-icones.mjs`.
 
 ## Definição de pronto (por fase)
 Testes passando · vetores do SPEC cobertos · sem segredos no Git · RLS testada (quando houver banco) · commit feito · resumo em português para o usuário com o próximo passo.
