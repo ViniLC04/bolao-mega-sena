@@ -8,7 +8,7 @@ Status: **Fase 0 encerrada em 26/11/2026.** 4 testes feitos; um único ponto **n
 | 2 | Intermediário (Cloudflare Worker ou equivalente) fala com a Caixa a partir do Brasil? | **concluído para o Brasil** (data centers GIG e GRU) | **Plano B: Cloudflare Worker** que só aceita número de concurso. Plano C: planilha |
 
 ### Risco conhecido (não testado)
-Não foi possível testar um visitante **fora do Brasil**. Se a Caixa recusar IPs do exterior, o botão "Atualizar" falha para esse visitante. Mitigação já prevista no SPEC 9.2: mensagem clara + plano B (Worker forçado na região de São Paulo, `spikes/worker/wrangler-br.toml`, já publicado e testado do Brasil) + plano C (planilha). Como o ADM e quem atualiza a lista estarão no Brasil, o impacto prático é baixo. **Reavaliar** quando algum participante no exterior abrir o app: a página `https://bolao-spike-caixa.pages.dev` continua no ar para esse teste.
+Não foi possível testar um visitante **fora do Brasil**. Se a Caixa recusar IPs do exterior, o botão "Atualizar" falha para esse visitante. Mitigação já prevista no SPEC 9.2: mensagem clara + plano B (Worker forçado na região de São Paulo, `spikes/worker/wrangler-br.toml`, já publicado e testado do Brasil) + plano C (planilha). Como o ADM e quem atualiza a lista estarão no Brasil, o impacto prático é baixo. **Reavaliar** quando algum participante no exterior abrir o app: a página `https://bolao-spike-caixa.pages.dev` **foi apagada em 27/11/2026** (junto com os workers de teste); para repetir esse teste, publique `spikes/caixa.html` de novo.
 
 ### Decisões de projeto resultantes
 1. Fonte principal dos concursos: Caixa, pelo navegador, por número (último + 1, +2…); HTTP 500 = fim da lista.
