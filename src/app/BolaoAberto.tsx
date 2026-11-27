@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apagarRascunho, fecharInscricoes, prorrogarInscricoes, reabrirInscricoes, type BolaoLinha } from '../data/boloes'
-import { listarCotas } from '../data/participantes'
+import { listarCotas, type CotaLinha } from '../data/participantes'
 import { verificarFechamento } from '../engine/cotas'
 import { campoLocalSPParaIso, formatarDataHoraSP, formatarInteiro, formatarReais, isoParaCampoLocalSP } from './formato'
 import type { PreviaSimulador } from './plano'
@@ -14,7 +14,8 @@ import { useRegras } from './regras'
 export function FaseDoBolao({ bolao, temJogos, aoMudar }: { bolao: BolaoLinha; temJogos: boolean; aoMudar: () => void }) {
   const { params } = useRegras()
   const navigate = useNavigate()
-  const [vendidas, setVendidas] = useState<number | null>(null)
+  const [cotas, setCotas] = useState<CotaLinha[] | null>(null)
+  const [descartar, setDescartar] = useState(false)
   const [data, setData] = useState(() => (bolao.inscricoes_ate ? isoParaCampoLocalSP(bolao.inscricoes_ate) : ''))
   const [erro, setErro] = useState<string | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -26,7 +27,7 @@ export function FaseDoBolao({ bolao, temJogos, aoMudar }: { bolao: BolaoLinha; t
   useEffect(() => {
     let vivo = true
     void listarCotas(bolao.id).then((r) => {
-      if (vivo) setVendidas(r.lista.reduce((s, c) => s + c.qtd, 0))
+      if (vivo) setCotas(r.lista)
     })
     return () => {
       vivo = false
@@ -35,7 +36,12 @@ export function FaseDoBolao({ bolao, temJogos, aoMudar }: { bolao: BolaoLinha; t
 
   if (!aberto && !fechadoSemJogos) return null
   const cota = bolao.cota_base_cent
-  const v = vendidas !== null && cota !== null ? verificarFechamento(vendidas, cota, params) : null
+  const registradas = cotas?.reduce((s, c) => s + c.qtd, 0) ?? 0
+  const pagas = cotas?.reduce((s, c) => s + c.qtd_paga, 0) ?? 0
+  const pendentes = registradas - pagas
+  const pessoasPendentes = (cotas ?? []).filter((c) => c.qtd_paga < c.qtd)
+  // Só entram no bolão as cotas com pagamento confirmado: é com elas que se confere o orçamento
+  const v = cotas !== null && cota !== null ? verificarFechamento(pagas, cota, params) : null
 
   function irParaOSimulador() {
     if (bolao.n_cotas === null || cota === null) return
@@ -45,11 +51,13 @@ export function FaseDoBolao({ bolao, temJogos, aoMudar }: { bolao: BolaoLinha; t
 
   async function fechar() {
     if (!v?.podeFechar) return
-    if (!window.confirm(`Fechar as inscrições com ${v.n} cotas? Depois disso ninguém mais entra (você ainda pode reabrir antes de salvar os jogos).`)) return
+    if (pendentes > 0 && !descartar) return setErro('Há cotas sem pagamento confirmado. Confirme os pagamentos ou marque a caixa para descartá-las.')
+    const aviso = pendentes > 0 ? ` As ${pendentes} cota(s) sem pagamento confirmado serão DESCARTADAS (as pessoas ficam de fora).` : ''
+    if (!window.confirm(`Fechar as inscrições com ${v.n} cotas pagas?${aviso} Depois disso ninguém mais entra (você ainda pode reabrir antes de salvar os jogos, mas o que foi descartado não volta).`)) return
     setOcupado(true)
     setErro(null)
     setMsg(null)
-    const r = await fecharInscricoes(bolao.id)
+    const r = await fecharInscricoes(bolao.id, descartar)
     setOcupado(false)
     if (r.erro || r.n === null || cota === null) return setErro(r.erro)
     navigate('/simulador', { state: { previa: { bolaoId: bolao.id, nome: bolao.nome, n: r.n, cotaBaseCent: cota } satisfies PreviaSimulador } })
@@ -122,9 +130,20 @@ export function FaseDoBolao({ bolao, temJogos, aoMudar }: { bolao: BolaoLinha; t
           ) : (
             <>
               <p>
-                Hoje: <strong>{formatarInteiro(v.n)}</strong> cota(s) · orçamento <strong>{formatarReais(v.orcamentoCent)}</strong>
+                Hoje: <strong>{formatarInteiro(registradas)}</strong> cota(s) cadastrada(s), das quais <strong>{formatarInteiro(pagas)}</strong> com pagamento confirmado. Só as pagas entram: orçamento <strong>{formatarReais(v.orcamentoCent)}</strong>
                 {v.minimoCent !== null && <> (o menor recibo possível para {v.n} cotas custa {formatarReais(v.minimoCent)})</>}.
               </p>
+              {pendentes > 0 && (
+                <div className="aviso">
+                  <p>
+                    <strong>{formatarInteiro(pendentes)} cota(s) sem pagamento confirmado</strong> ({pessoasPendentes.length} pessoa(s)): {pessoasPendentes.map((c) => `${c.participantes?.nome ?? '—'} (${c.qtd - c.qtd_paga})`).join(', ')}.
+                  </p>
+                  <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input type="checkbox" checked={descartar} onChange={(e) => setDescartar(e.target.checked)} style={{ width: 20, minHeight: 20 }} />
+                    Descartar essas cotas ao fechar (as pessoas ficam de fora)
+                  </label>
+                </div>
+              )}
               {v.motivo === 'n_invalido' && (
                 <p className="aviso">
                   O bolão precisa ter de {params.bolao_cotas_min} a {params.bolao_cotas_max} cotas para fechar (hoje tem {v.n}).
@@ -135,10 +154,10 @@ export function FaseDoBolao({ bolao, temJogos, aoMudar }: { bolao: BolaoLinha; t
               {v.podeFechar && <p className="ok">Dá para fechar: o simulador vai aproveitar o orçamento e a sobra vai para a caixinha.</p>}
             </>
           )}
-          <button type="button" className="primario" disabled={ocupado || !v?.podeFechar} onClick={() => void fechar()}>
+          <button type="button" className="primario" disabled={ocupado || !v?.podeFechar || (pendentes > 0 && !descartar)} onClick={() => void fechar()}>
             Fechar inscrições e gerar os jogos
           </button>
-          {vendidas === 0 && (
+          {registradas === 0 && (
             <>
               {' '}
               <button type="button" className="secundario" disabled={ocupado} onClick={() => void apagar()}>

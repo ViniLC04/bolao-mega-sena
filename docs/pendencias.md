@@ -2,6 +2,11 @@
 
 Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não inventar valores.
 
+## Fase 8 (autoatendimento) — limites conhecidos
+- O app não prova a identidade de quem se inscreve (sem login): vale o link pessoal secreto + confirmação manual do PIX pelo ADM.
+- Confirmação automática do PIX exige conta PJ/provedor pago: fora do escopo. O ADM confere no banco.
+- Cota com pagamento parcial (aumento depois de pagar): a diferença é cobrada pelo mesmo PIX com o valor pendente.
+
 ## Pendentes
 | # | Pendência | Onde é parâmetro | Status |
 |---|---|---|---|

@@ -110,6 +110,26 @@ Se você fechou cedo demais, clique em **Reabrir as inscrições** (só enquanto
 4. Não aparecem sobrenome, contato nem quem já pagou. Se dois participantes tiverem o mesmo primeiro nome, aparecem como "Ana (1)" e "Ana (2)".
 5. **Gerar link novo** troca o endereço (o antigo para de funcionar). **Desligar** tira o acesso. Mande o link só para quem participa.
 
+## 10c. Inscrição pelo link, PIX e confirmação de pagamento
+
+Com o bolão **aberto**, cada pessoa pode se inscrever sozinha, só para si mesma.
+
+**Preparar (uma vez):**
+1. Em **Conta → Recebimento por PIX**, cadastre sua chave, o nome, a cidade e o seu WhatsApp. Aparece um QR de exemplo (R$ 1,00): **leia com o app do seu banco (sem pagar)** e confira se o nome e a chave estão certos.
+2. No bolão aberto, em **Link público do bolão**, gere o link e marque **Aceitar inscrições pelo link**. Escolha o máximo de cotas por pessoa (padrão 10).
+3. Mande o link no grupo.
+
+**O que a pessoa faz:** abre o link, clica em **Quero participar** (nome completo, WhatsApp, quantidade de cotas), cai na página pessoal dela com o **QR code e o PIX copia e cola já com o valor**, paga no banco e **envia o comprovante** (anexando no app ou pelo WhatsApp, com a mensagem pronta). Ela pode **aumentar** as cotas depois, nunca diminuir (só você diminui, em "Cotas e pagamentos → Alterar").
+
+**O que você faz:**
+1. Em **Cotas e pagamentos** aparecem os inscritos com a etiqueta "pelo link" e "0 de N pagas". Se enviou comprovante, há o botão **Ver**.
+2. Confira no **seu banco** que o dinheiro caiu e clique em **Confirmar pagamento**. (O app não sabe sozinho se o PIX caiu: pessoa física não tem confirmação automática grátis.)
+3. Quem não pagou fica **pendente** e **não entra** no bolão nem aparece na lista pública.
+
+**Fechar as inscrições:** só as cotas com pagamento confirmado contam para o número de cotas. O app lista as pendências; marque **Descartar essas cotas ao fechar** para continuar (as pessoas ficam de fora; isso não volta). Depois siga para o Simulador como de costume.
+
+**Cuidados:** o link do bolão é semi-público (quem o tem pode se cadastrar). Por isso há limites (uma inscrição por WhatsApp, 10 cotas, tentativas por hora) e nada vale até você confirmar o PIX. Se alguém aparecer com nome falso, simplesmente não confirme e descarte no fechamento.
+
 ## 11. Caixinha
 
 Em **Caixinha**, dentro do bolão, o app mostra a sobra do arredondamento da cota. Lance entradas e saídas à parte com o motivo.

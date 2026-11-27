@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { carregarMeusJogos, carregarMinhaParticipacao, type JogoPublico, type MinhaParticipacaoLinha } from '../../data/publico'
 import { ChancesBolao } from '../ChancesBolao'
+import { PagamentoPix } from '../PagamentoPix'
 import { ConferenciaBolao } from '../Conferencia'
 import { formatarDataHoraSP, formatarReais } from '../formato'
 
@@ -12,6 +13,7 @@ export function MinhaParticipacao() {
   const { token = '' } = useParams()
   const [linhas, setLinhas] = useState<MinhaParticipacaoLinha[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
+  const [versao, setVersao] = useState(0)
 
   useEffect(() => {
     let vivo = true
@@ -23,7 +25,7 @@ export function MinhaParticipacao() {
     return () => {
       vivo = false
     }
-  }, [token])
+  }, [token, versao])
 
   return (
     <div>
@@ -41,7 +43,7 @@ export function MinhaParticipacao() {
             Olá, <strong>{linhas[0].participante}</strong>! Aqui você vê só a sua participação.
           </p>
           {linhas.map((l) => (
-            <Cartao key={l.bolao_id} l={l} token={token} />
+            <Cartao key={l.bolao_id} l={l} token={token} aoMudar={() => setVersao((v) => v + 1)} />
           ))}
         </>
       )}
@@ -52,7 +54,7 @@ export function MinhaParticipacao() {
   )
 }
 
-function Cartao({ l, token }: { l: MinhaParticipacaoLinha; token: string }) {
+function Cartao({ l, token, aoMudar }: { l: MinhaParticipacaoLinha; token: string; aoMudar: () => void }) {
   const [aberto, setAberto] = useState(false)
   const [jogos, setJogos] = useState<JogoPublico[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
@@ -87,12 +89,13 @@ function Cartao({ l, token }: { l: MinhaParticipacaoLinha; token: string }) {
         </li>
         <li>
           Valor a pagar: <strong>{formatarReais(l.valor_devido_cent)}</strong> ·{' '}
-          <strong className={l.pago ? 'ok' : undefined}>{l.pago ? 'pago ✓' : 'ainda não pago'}</strong>
+          <strong className={l.pago ? 'ok' : undefined}>{l.pago ? 'pago ✓' : l.qtd_paga > 0 ? `${l.qtd_paga} de ${l.qtd} cotas pagas` : 'ainda não pago'}</strong>
         </li>
         <li>
           Via do recibo: <strong>{l.via_entregue ? 'entregue ✓' : 'ainda não entregue'}</strong>
         </li>
       </ul>
+      {l.status === 'aberto' && <PagamentoPix l={l} token={token} aoMudar={aoMudar} />}
       {congelado && l.hash && (
         <p className="muted pequeno" style={{ wordBreak: 'break-all' }}>
           Impressão digital (SHA-256) dos jogos: <code>{l.hash}</code>

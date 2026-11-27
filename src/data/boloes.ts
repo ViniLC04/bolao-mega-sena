@@ -179,8 +179,8 @@ function mensagemRegra(codigo: string | undefined, texto: string, padrao: string
 }
 
 /** Fecha as inscrições: N passa a ser o total de cotas cadastradas e o bolão segue para a geração dos jogos. */
-export async function fecharInscricoes(id: string): Promise<{ n: number | null; erro: string | null }> {
-  const { data, error } = await supabase.rpc('fechar_inscricoes', { p_bolao: id })
+export async function fecharInscricoes(id: string, descartarPendentes: boolean): Promise<{ n: number | null; erro: string | null }> {
+  const { data, error } = await supabase.rpc('fechar_inscricoes', { p_bolao: id, p_descartar: descartarPendentes })
   if (error) return { n: null, erro: mensagemRegra(error.code, error.message, 'Não consegui fechar as inscrições agora.') }
   return { n: (data as { n_cotas: number }).n_cotas, erro: null }
 }
@@ -243,6 +243,10 @@ export async function congelarBolao(id: string): Promise<{ ok: boolean; erro: st
 export interface LinkDoBolao {
   token: string
   ativo: boolean
+  /** as pessoas podem se inscrever sozinhas pelo link */
+  autoinscricao: boolean
+  /** máximo de cotas que uma pessoa pode pedir pelo link */
+  max_cotas_pessoa: number
 }
 
 export function enderecoDoLinkDoBolao(token: string): string {
@@ -250,7 +254,7 @@ export function enderecoDoLinkDoBolao(token: string): string {
 }
 
 export async function carregarLinkDoBolao(bolaoId: string): Promise<{ link: LinkDoBolao | null; erro: string | null }> {
-  const { data, error } = await supabase.from('bolao_links').select('token, ativo').eq('bolao_id', bolaoId).maybeSingle()
+  const { data, error } = await supabase.from('bolao_links').select('token, ativo, autoinscricao, max_cotas_pessoa').eq('bolao_id', bolaoId).maybeSingle()
   if (error) return { link: null, erro: 'Não consegui ler o link do bolão.' }
   return { link: (data as LinkDoBolao | null) ?? null, erro: null }
 }
@@ -259,7 +263,16 @@ export async function carregarLinkDoBolao(bolaoId: string): Promise<{ link: Link
 export async function ligarLinkDoBolao(bolaoId: string, atual: LinkDoBolao | null, renovar: boolean): Promise<{ link: LinkDoBolao | null; erro: string | null }> {
   const token = !renovar && atual ? atual.token : gerarTokenDoLink()
   const { error } = await supabase.from('bolao_links').upsert({ bolao_id: bolaoId, token, ativo: true, atualizado_em: new Date().toISOString() })
-  return error ? { link: null, erro: 'Não consegui ligar o link agora.' } : { link: { token, ativo: true }, erro: null }
+  return error
+    ? { link: null, erro: 'Não consegui ligar o link agora.' }
+    : { link: { token, ativo: true, autoinscricao: atual?.autoinscricao ?? false, max_cotas_pessoa: atual?.max_cotas_pessoa ?? 10 }, erro: null }
+}
+
+/** Liga ou desliga a inscrição pelo link e define o máximo de cotas por pessoa. */
+export async function definirAutoinscricao(bolaoId: string, ligada: boolean, maxCotasPessoa: number): Promise<string | null> {
+  if (!Number.isInteger(maxCotasPessoa) || maxCotasPessoa < 1 || maxCotasPessoa > 100) return 'O máximo por pessoa deve ser um número de 1 a 100.'
+  const { error } = await supabase.from('bolao_links').update({ autoinscricao: ligada, max_cotas_pessoa: maxCotasPessoa, atualizado_em: new Date().toISOString() }).eq('bolao_id', bolaoId)
+  return error ? 'Não consegui salvar agora.' : null
 }
 
 export async function desligarLinkDoBolao(bolaoId: string): Promise<string | null> {

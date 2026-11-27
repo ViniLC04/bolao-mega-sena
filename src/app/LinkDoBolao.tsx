@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { carregarLinkDoBolao, desligarLinkDoBolao, enderecoDoLinkDoBolao, ligarLinkDoBolao, type LinkDoBolao as Link } from '../data/boloes'
+import { carregarLinkDoBolao, definirAutoinscricao, desligarLinkDoBolao, enderecoDoLinkDoBolao, ligarLinkDoBolao, type LinkDoBolao as Link } from '../data/boloes'
+import { carregarRecebimento } from '../data/recebimento'
 
 /** Cartão do bolão (ADM): liga, copia, renova e desliga o link público do bolão (primeiros nomes e cotas). */
-export function LinkDoBolao({ bolaoId }: { bolaoId: string }) {
+export function LinkDoBolao({ bolaoId, aberto }: { bolaoId: string; aberto: boolean }) {
+  const [pixOk, setPixOk] = useState(true)
   const [link, setLink] = useState<Link | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
@@ -11,10 +13,11 @@ export function LinkDoBolao({ bolaoId }: { bolaoId: string }) {
 
   useEffect(() => {
     let vivo = true
-    void carregarLinkDoBolao(bolaoId).then((r) => {
+    void Promise.all([carregarLinkDoBolao(bolaoId), carregarRecebimento()]).then(([r, pix]) => {
       if (!vivo) return
       setLink(r.link)
       setErro(r.erro)
+      setPixOk(pix.recebimento !== null)
       setCarregando(false)
     })
     return () => {
@@ -42,6 +45,17 @@ export function LinkDoBolao({ bolaoId }: { bolaoId: string }) {
     if (r.erro || !r.link) return setErro(r.erro)
     setLink(r.link)
     await copiar(r.link.token)
+  }
+
+  async function salvarAuto(ligada: boolean, max: number) {
+    setOcupado(true)
+    setErro(null)
+    setMsg(null)
+    const e = await definirAutoinscricao(bolaoId, ligada, max)
+    setOcupado(false)
+    if (e) return setErro(e)
+    setLink((l) => (l ? { ...l, autoinscricao: ligada, max_cotas_pessoa: max } : l))
+    setMsg(ligada ? 'Inscrição pelo link ligada.' : 'Inscrição pelo link desligada.')
   }
 
   async function desligar() {
@@ -78,6 +92,31 @@ export function LinkDoBolao({ bolaoId }: { bolaoId: string }) {
               Desligar
             </button>
           </div>
+
+          {aberto && (
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--borda)' }}>
+              <h3 style={{ margin: '0 0 4px' }}>Inscrição pelo link</h3>
+              <p className="muted pequeno">
+                Ligada, quem abre o link pode se cadastrar (nome e WhatsApp), escolher as cotas, ver o seu PIX e enviar o comprovante. A inscrição só vira cota depois que <strong>você confirma o pagamento</strong> em “Cotas e pagamentos”.
+              </p>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '8px 0' }}>
+                <input type="checkbox" checked={link.autoinscricao} disabled={ocupado} onChange={(e) => void salvarAuto(e.target.checked, link.max_cotas_pessoa)} style={{ width: 20, minHeight: 20 }} />
+                Aceitar inscrições pelo link
+              </label>
+              <label className="campo" style={{ maxWidth: 260 }}>
+                <span>Máximo de cotas por pessoa</span>
+                <input
+                  inputMode="numeric"
+                  defaultValue={link.max_cotas_pessoa}
+                  onBlur={(e) => {
+                    const n = Number(e.target.value)
+                    if (n !== link.max_cotas_pessoa) void salvarAuto(link.autoinscricao, n)
+                  }}
+                />
+              </label>
+              {link.autoinscricao && !pixOk && <p className="aviso">Cadastre o seu PIX em <strong>Conta → Recebimento por PIX</strong>, senão as pessoas não verão como pagar.</p>}
+            </div>
+          )}
         </>
       )}
       {!carregando && !link?.ativo && (

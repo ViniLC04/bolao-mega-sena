@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { carregarBolaoPorLink, carregarJogosPorLink, type JogoPublico, type ParticipanteDoLink, type ResumoBolaoPorLink } from '../../data/publico'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { carregarBolaoPorLink, carregarJogosPorLink, inscreverNoBolao, type JogoPublico, type ParticipanteDoLink, type ResumoBolaoPorLink } from '../../data/publico'
 import { ChancesBolao } from '../ChancesBolao'
 import { ConferenciaBolao } from '../Conferencia'
 import { contagemRegressiva, formatarDataHoraSP, formatarInteiro, formatarPct, formatarReais } from '../formato'
@@ -8,6 +8,96 @@ import { useRegras } from '../regras'
 import { Simbolo } from '../simbolos'
 
 const dezenaTexto = (d: number) => String(d).padStart(2, '0')
+
+const chaveMeuLink = (tokenBolao: string) => `bolao-meu-link-${tokenBolao.slice(0, 16)}`
+
+function lerMeuLink(tokenBolao: string): string | null {
+  try {
+    const v = localStorage.getItem(chaveMeuLink(tokenBolao))
+    return v && /^[0-9a-f]{64}$/.test(v) ? v : null
+  } catch {
+    return null
+  }
+}
+
+/** "Quero participar": a pessoa se cadastra sozinha, só para si, e vai para o link pessoal (com o PIX). */
+function QueroParticipar({ tokenBolao, resumo }: { tokenBolao: string; resumo: ResumoBolaoPorLink }) {
+  const navigate = useNavigate()
+  const [nome, setNome] = useState('')
+  const [zap, setZap] = useState('')
+  const [qtd, setQtd] = useState(1)
+  const [ciente, setCiente] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [ocupado, setOcupado] = useState(false)
+  const [meuLink] = useState(() => lerMeuLink(tokenBolao))
+  const max = Math.max(1, resumo.max_cotas_pessoa)
+  const valor = resumo.cota_cent !== null ? resumo.cota_cent * qtd : null
+
+  async function enviar(e: React.FormEvent) {
+    e.preventDefault()
+    if (!ciente) return setErro('Marque a caixa para confirmar que leu o aviso.')
+    setOcupado(true)
+    setErro(null)
+    const r = await inscreverNoBolao(tokenBolao, nome, zap, qtd)
+    setOcupado(false)
+    if (r.erro || !r.token) return setErro(r.erro)
+    try {
+      localStorage.setItem(chaveMeuLink(tokenBolao), r.token)
+    } catch {
+      /* sem armazenamento: a pessoa precisa guardar o link da próxima tela */
+    }
+    navigate(`/p/${r.token}`)
+  }
+
+  return (
+    <section className="card" style={{ marginTop: 14 }}>
+      <h2>Quero participar</h2>
+      {meuLink && (
+        <p className="ok">
+          Você já se inscreveu neste aparelho. <Link to={`/p/${meuLink}`}>Abrir a minha participação</Link>
+        </p>
+      )}
+      <form onSubmit={(e) => void enviar(e)}>
+        <div className="campos">
+          <label className="campo">
+            <span>Nome completo</span>
+            <input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" maxLength={80} required />
+          </label>
+          <label className="campo">
+            <span>WhatsApp (com DDD)</span>
+            <input value={zap} onChange={(e) => setZap(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(11) 91234-5678" maxLength={20} required />
+          </label>
+          <label className="campo">
+            <span>Quantas cotas?</span>
+            <select value={qtd} onChange={(e) => setQtd(Number(e.target.value))}>
+              {Array.from({ length: max }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {valor !== null && (
+          <p>
+            Valor a pagar: <strong>{formatarReais(valor)}</strong>
+          </p>
+        )}
+        <p className="muted pequeno">
+          Você se inscreve só para si mesmo. Seu nome completo e seu WhatsApp ficam visíveis apenas para o organizador; os outros participantes veem só o seu primeiro nome. Depois da inscrição você recebe um link pessoal com o PIX para pagar. A cota só vale depois que o organizador confirma o pagamento. Depois de inscrito, dá para aumentar as cotas, mas não diminuir.
+        </p>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '8px 0' }}>
+          <input type="checkbox" checked={ciente} onChange={(e) => setCiente(e.target.checked)} style={{ width: 20, minHeight: 20 }} />
+          Li e concordo com o uso dos meus dados para organizar o bolão
+        </label>
+        {erro && <p className="erro">{erro}</p>}
+        <button type="submit" className="primario" disabled={ocupado}>
+          {ocupado ? 'Enviando…' : 'Me inscrever'}
+        </button>
+      </form>
+    </section>
+  )
+}
 
 /** Página do link público de UM bolão (#/b/<token>): primeiros nomes e cotas, totais e jogos. Sem sobrenome nem contato. */
 export function BolaoPublico() {
@@ -80,6 +170,8 @@ export function BolaoPublico() {
       </section>
 
       {erro && <p className="erro">{erro}</p>}
+
+      {resumo.autoinscricao && <QueroParticipar tokenBolao={token} resumo={resumo} />}
 
       <div className="grade" style={{ marginTop: 14 }}>
         <section className="card">

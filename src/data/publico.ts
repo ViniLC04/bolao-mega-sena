@@ -44,6 +44,9 @@ export interface ResumoBolaoPorLink {
   arrecadado_cent: number
   vias_entregues: number
   inscricoes_ate: string | null
+  /** dá para se inscrever agora pelo link (ligado pelo ADM, bolão aberto e dentro do prazo) */
+  autoinscricao: boolean
+  max_cotas_pessoa: number
 }
 
 /** Quem está no bolão: SÓ o primeiro nome (homônimos numerados) e as cotas. */
@@ -83,6 +86,71 @@ export interface MinhaParticipacaoLinha {
   custo_cent: number
   cota_cent: number | null
   inscricoes_ate: string | null
+  qtd_paga: number
+  aumentar_liberado: boolean
+  max_cotas_pessoa: number
+}
+
+export interface PixDoOrganizador {
+  tipo: string
+  chave: string
+  nome: string
+  cidade: string
+  whatsapp: string
+}
+
+interface RespostaRpc {
+  ok: boolean
+  erro?: string
+  [k: string]: unknown
+}
+
+const ERRO_REDE = 'Não consegui falar com o servidor agora. Tente de novo.'
+
+/** "Quero participar": cria a inscrição e devolve o link pessoal (token) da pessoa. */
+export async function inscreverNoBolao(
+  tokenBolao: string,
+  nome: string,
+  whatsapp: string,
+  qtd: number,
+): Promise<{ token: string | null; erro: string | null }> {
+  const { data, error } = await supabase.rpc('inscrever_no_bolao', { p_token: tokenBolao, p_nome: nome, p_whatsapp: whatsapp, p_qtd: qtd })
+  if (error) return { token: null, erro: ERRO_REDE }
+  const r = data as RespostaRpc
+  if (!r?.ok || typeof r.token !== 'string') return { token: null, erro: r?.erro ?? ERRO_REDE }
+  return { token: r.token, erro: null }
+}
+
+/** Só aumenta (o banco recusa diminuir). */
+export async function aumentarMinhasCotas(tokenPessoal: string, bolaoId: string, novaQtd: number): Promise<string | null> {
+  const { data, error } = await supabase.rpc('aumentar_minhas_cotas', { p_token: tokenPessoal, p_bolao: bolaoId, p_nova_qtd: novaQtd })
+  if (error) return ERRO_REDE
+  const r = data as RespostaRpc
+  return r?.ok ? null : (r?.erro ?? ERRO_REDE)
+}
+
+/** PIX do organizador (só aparece para quem tem pagamento pendente). */
+export async function carregarRecebimentoPublico(tokenPessoal: string): Promise<PixDoOrganizador | null> {
+  const { data, error } = await supabase.rpc('publico_recebimento', { p_token: tokenPessoal })
+  if (error || !Array.isArray(data) || data.length === 0) return null
+  return data[0] as PixDoOrganizador
+}
+
+export const COMPROVANTE_MAX_BYTES = 3 * 1024 * 1024
+const TIPOS_COMPROVANTE: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' }
+
+/** Envia o comprovante para o armazenamento privado e registra no banco. */
+export async function enviarComprovante(tokenPessoal: string, bolaoId: string, arquivo: File): Promise<string | null> {
+  const ext = TIPOS_COMPROVANTE[arquivo.type]
+  if (!ext) return 'Envie uma foto (JPG, PNG ou WebP) ou um PDF.'
+  if (arquivo.size > COMPROVANTE_MAX_BYTES) return 'O arquivo passa de 3 MB. Tire um print menor ou mande pelo WhatsApp.'
+  const caminho = `${tokenPessoal}/${crypto.randomUUID()}.${ext}`
+  const up = await supabase.storage.from('comprovantes').upload(caminho, arquivo, { contentType: arquivo.type, upsert: false })
+  if (up.error) return 'Não consegui enviar o arquivo. Tente de novo ou mande pelo WhatsApp.'
+  const { data, error } = await supabase.rpc('enviar_comprovante', { p_token: tokenPessoal, p_bolao: bolaoId, p_caminho: caminho, p_nome: arquivo.name })
+  if (error) return ERRO_REDE
+  const r = data as RespostaRpc
+  return r?.ok ? null : (r?.erro ?? ERRO_REDE)
 }
 
 /** Link pessoal: só os bolões da própria pessoa. Link errado ou desligado = lista vazia. */

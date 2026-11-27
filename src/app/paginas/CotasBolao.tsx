@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
+  alterarQtdCota,
   criarParticipante,
   definirPagas,
   incluirCota,
+  linkDoComprovante,
   lancarCaixinha,
   listarCaixinha,
   listarCotas,
@@ -110,11 +112,39 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
     }
   }
 
-  async function marcar(c: CotaLinha, campo: 'pago' | 'via_entregue') {
+  async function marcar(c: CotaLinha, campo: 'via_entregue') {
     setErro(null)
-    const e = campo === 'pago' ? await definirPagas(c.id, c.pago ? 0 : c.qtd) : await marcarCota(c.id, campo, !c[campo])
+    const e = await marcarCota(c.id, campo, !c[campo])
     if (e) setErro(e)
     else await recarregar()
+  }
+
+  async function definir(c: CotaLinha, qtdPaga: number) {
+    if (qtdPaga === 0 && !window.confirm(`Desfazer a confirmação de pagamento de ${c.participantes?.nome ?? 'esta pessoa'}?`)) return
+    setErro(null)
+    const e = await definirPagas(c.id, qtdPaga)
+    if (e) setErro(e)
+    else await recarregar()
+  }
+
+  async function mudarQtd(c: CotaLinha) {
+    if (cota === null) return
+    const t = window.prompt(`Nova quantidade de cotas de ${c.participantes?.nome ?? 'esta pessoa'} (hoje ${c.qtd}):`, String(c.qtd))
+    if (t === null) return
+    const n = Number(t)
+    if (!Number.isInteger(n) || n < 1) return setErro('Informe um número inteiro de cotas, de 1 em diante. Para tirar a pessoa, use Remover.')
+    if (n === c.qtd) return
+    setErro(null)
+    const e = await alterarQtdCota({ id: c.id, qtdPaga: c.qtd_paga }, n, cota)
+    if (e) setErro(e)
+    else await recarregar()
+  }
+
+  async function verComprovante(caminho: string) {
+    setErro(null)
+    const r = await linkDoComprovante(caminho)
+    if (r.erro || !r.url) return setErro(r.erro)
+    window.open(r.url, '_blank', 'noopener')
   }
 
   async function remover(c: CotaLinha) {
@@ -222,6 +252,12 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
         </section>
       )}
 
+      {resumo.pessoasPendentes > 0 && (
+        <p className="aviso">
+          <strong>Aguardando pagamento: {resumo.pessoasPendentes} pessoa(s)</strong>, {formatarInteiro(resumo.naoPagas)} cota(s), {formatarReais(resumo.aReceberCent)}. Confira no seu banco e clique em <strong>Confirmar pagamento</strong>.
+        </p>
+      )}
+
       {cotas.length > 0 && (
         <div className="tabela-rolavel" style={{ marginTop: 12 }}>
           <table>
@@ -229,31 +265,76 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
               <tr>
                 <th>Participante</th>
                 <th>Cotas</th>
-                <th>Devido</th>
-                <th>Pago</th>
+                <th>Pagamento</th>
+                <th>Comprovante</th>
                 <th>Via entregue</th>
                 <th />
               </tr>
             </thead>
             <tbody>
-              {cotas.map((c) => (
-                <tr key={c.id}>
-                  <td>{c.participantes?.nome ?? '—'}</td>
-                  <td>{c.qtd}</td>
-                  <td>{formatarReais(c.valor_devido_cent)}</td>
-                  <td>
-                    <input type="checkbox" checked={c.pago} onChange={() => void marcar(c, 'pago')} aria-label={`Pago: ${c.participantes?.nome ?? ''}`} style={{ width: 22, minHeight: 22 }} />
-                  </td>
-                  <td>
-                    <input type="checkbox" checked={c.via_entregue} onChange={() => void marcar(c, 'via_entregue')} aria-label={`Via entregue: ${c.participantes?.nome ?? ''}`} style={{ width: 22, minHeight: 22 }} />
-                  </td>
-                  <td>
-                    <button type="button" className="secundario pequeno" onClick={() => void remover(c)}>
-                      Remover
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {cotas.map((c) => {
+                const nome = c.participantes?.nome ?? '—'
+                const falta = c.qtd - c.qtd_paga
+                return (
+                  <tr key={c.id}>
+                    <td>
+                      {nome}
+                      {c.origem === 'link' && <span className="tag" title="A própria pessoa se inscreveu pelo link do bolão">pelo link</span>}
+                      {c.participantes?.contato && <div className="muted pequeno">{c.participantes.contato}</div>}
+                    </td>
+                    <td>
+                      {c.qtd}
+                      <div className="muted pequeno">{formatarReais(c.valor_devido_cent)}</div>
+                      <button type="button" className="secundario pequeno" onClick={() => void mudarQtd(c)}>
+                        Alterar
+                      </button>
+                    </td>
+                    <td>
+                      {falta === 0 ? (
+                        <span className="ok">✓ pagas ({c.qtd})</span>
+                      ) : (
+                        <>
+                          <strong>{c.qtd_paga} de {c.qtd}</strong> pagas
+                          <div className="muted pequeno">falta {formatarReais(falta * (cota ?? 0))}</div>
+                        </>
+                      )}
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                        {falta > 0 && (
+                          <button type="button" className="primario pequeno" onClick={() => void definir(c, c.qtd)}>
+                            Confirmar pagamento
+                          </button>
+                        )}
+                        {c.qtd_paga > 0 && (
+                          <button type="button" className="secundario pequeno" onClick={() => void definir(c, 0)}>
+                            Desfazer
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      {c.comprovantes.length === 0 ? (
+                        <span className="muted pequeno">—</span>
+                      ) : (
+                        c.comprovantes.map((cp, i) => (
+                          <div key={cp.id}>
+                            <button type="button" className="secundario pequeno" onClick={() => void verComprovante(cp.caminho)}>
+                              Ver {c.comprovantes.length > 1 ? i + 1 : ''}
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </td>
+                    <td>
+                      <input type="checkbox" checked={c.via_entregue} onChange={() => void marcar(c, 'via_entregue')} aria-label={`Via entregue: ${nome}`} style={{ width: 22, minHeight: 22 }} />
+                    </td>
+                    <td>
+                      <button type="button" className="secundario pequeno" onClick={() => void remover(c)}>
+                        Remover
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

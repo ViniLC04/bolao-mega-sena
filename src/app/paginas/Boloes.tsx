@@ -329,7 +329,7 @@ export function BolaoDetalhe() {
         </section>
       )}
 
-      <LinkDoBolao bolaoId={bolao.id} />
+      <LinkDoBolao bolaoId={bolao.id} aberto={bolao.status === 'aberto'} />
 
       <CotasBolao bolao={bolao} custoCent={totalCent} />
 
