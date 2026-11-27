@@ -10,6 +10,8 @@ const ITENS = [
   { to: '/gerador', rotulo: 'Gerador' },
   { to: '/boloes', rotulo: 'Bolões' },
   { to: '/participantes', rotulo: 'Participantes' },
+  { to: '/estatisticas', rotulo: 'Estatísticas' },
+  { to: '/fontes', rotulo: 'Fontes' },
   { to: '/conta', rotulo: 'Conta' },
 ]
 

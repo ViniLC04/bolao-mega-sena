@@ -53,6 +53,23 @@ export async function carregarRecentes(n = 10): Promise<{ lista: ConcursoRecente
   return { lista: (data ?? []) as ConcursoRecente[], erro: null }
 }
 
+export interface ConcursoCompleto extends ConcursoRecente {
+  faixas: { faixa: 4 | 5 | 6; ganhadores: number; valor_cent: number }[]
+}
+
+/** Um concurso com o rateio oficial de cada faixa; null se ele não estiver no banco. */
+export async function carregarConcursoCompleto(numero: number): Promise<{ concurso: ConcursoCompleto | null; erro: string | null }> {
+  const { data, error } = await supabase
+    .from('concursos')
+    .select('numero, data, dezenas, status, fonte, obtido_em, concurso_faixas(faixa, ganhadores, valor_cent)')
+    .eq('numero', numero)
+    .maybeSingle()
+  if (error) return { concurso: null, erro: 'Não consegui ler o concurso no banco.' }
+  if (!data) return { concurso: null, erro: null }
+  const { concurso_faixas, ...resto } = data as unknown as ConcursoRecente & { concurso_faixas: ConcursoCompleto['faixas'] }
+  return { concurso: { ...resto, faixas: concurso_faixas }, erro: null }
+}
+
 /** Quantos concursos há em cada status. */
 export async function contarPorStatus(): Promise<Record<ConcursoRecente['status'], number> | null> {
   const r: Record<ConcursoRecente['status'], number> = { confirmado: 0, aguardando: 0, oficial_importado: 0 }

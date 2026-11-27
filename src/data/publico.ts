@@ -25,6 +25,12 @@ export interface JogoPublico {
   dezenas: number[]
 }
 
+/** Números dos concursos-Virada (lista editada pelo ADM; pública porque só tem números de concurso). */
+export async function carregarViradasPublicas(): Promise<number[]> {
+  const { data, error } = await supabase.rpc('publico_viradas')
+  return error || !Array.isArray(data) ? [] : (data as number[])
+}
+
 export async function carregarBoloesPublicos(): Promise<{ boloes: BolaoPublico[]; erro: string | null }> {
   const { data, error } = await supabase.rpc('publico_boloes')
   if (error) return { boloes: [], erro: 'Não consegui carregar os bolões agora.' }

@@ -4,6 +4,8 @@ import { carregarBoloesPublicos, carregarJogosPublicos, type BolaoPublico, type 
 import { TOTAL_COMBINACOES } from '../../engine/combinatoria'
 import { combinacoesDistintas } from '../../engine/probabilidades'
 import { ChanceExpansivel } from '../Chance'
+import { ChancesBolao } from '../ChancesBolao'
+import { ConferenciaBolao } from '../Conferencia'
 import { contagemRegressiva, formatarDataHoraSP, formatarInteiro, formatarReais } from '../formato'
 import { useRegras } from '../regras'
 
@@ -58,7 +60,7 @@ export function Publico() {
       )}
 
       <p className="muted pequeno" style={{ marginTop: 24 }}>
-        Nesta página não aparecem nomes de ninguém. <Link to="/fontes">Fontes dos dados e atualizar concursos</Link> · <Link to="/entrar">Sou o organizador</Link>
+        Nesta página não aparecem nomes de ninguém. <Link to="/estatisticas">Estatísticas</Link> · <Link to="/fontes">Fontes dos dados e atualizar concursos</Link> · <Link to="/entrar">Sou o organizador</Link>
       </p>
     </div>
   )
@@ -112,6 +114,10 @@ function CartaoBolao({ b }: { b: BolaoPublico }) {
             <p>
               Chance de sena do bolão inteiro: <ChanceExpansivel p={distintas / TOTAL_COMBINACOES} /> ({formatarInteiro(distintas)} combinações de 6 dezenas distintas).
             </p>
+          )}
+          {jogos && jogos.length > 0 && <ChancesBolao jogos={jogos.map((j) => ({ recibo: j.recibo_ordem, dezenas: j.dezenas }))} />}
+          {jogos && jogos.length > 0 && (
+            <ConferenciaBolao jogos={jogos.map((j) => ({ recibo: j.recibo_ordem, dezenas: j.dezenas }))} nCotas={b.n_cotas} concursoAlvo={b.concurso_alvo} />
           )}
           {recibos.map((ro) => {
             const doRecibo = (jogos ?? []).filter((j) => j.recibo_ordem === ro)

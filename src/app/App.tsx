@@ -5,6 +5,7 @@ import { Layout } from './Layout'
 import { BolaoDetalhe, Boloes } from './paginas/Boloes'
 import { Conta } from './paginas/Conta'
 import { Concursos } from './paginas/Concursos'
+import { Estatisticas } from './paginas/Estatisticas'
 import { Fontes } from './paginas/Fontes'
 import { Gerador } from './paginas/Gerador'
 import { Login } from './paginas/Login'
@@ -45,6 +46,7 @@ export function App() {
           <Route path="/entrar" element={<Login />} />
           <Route path="/publico" element={<Publico />} />
           <Route path="/fontes" element={<Fontes />} />
+          <Route path="/estatisticas" element={<Estatisticas />} />
           <Route element={<RotaAdm />}>
             <Route index element={<Painel />} />
             <Route path="regras" element={<Regras />} />

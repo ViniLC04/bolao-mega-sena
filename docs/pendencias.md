@@ -53,6 +53,11 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 31 | Fase 3: contagens públicas de pagos e vias entregues são agregadas; com poucos participantes dá para deduzir quem pagou (é o que o SPEC pede) | premissa adotada |
 | 32 | Link pessoal secreto por participante (SPEC 11) | **adiado**: fica para depois da Fase 3, se sobrar tempo |
 | 33 | Data limite no servidor só vale se as regras estiverem gravadas no banco (Regras → "Gravar as regras padrão no banco"); sem isso, só a tela bloqueia | aberto: gravar as regras no banco antes de abrir as cotas |
+| 34 | Fase 4: concurso enviado por visitante entra "aguardando confirmação"; só o ADM confirma (ou grava direto "confirmado" se as 2 fontes batem). Se alguém enviar resultado falso, o ADM usa "Rejeitar" (só o último concurso, só aguardando) | decidido pelo usuário em 26/11/2026 |
+| 35 | Fase 4: limite do servidor = 5 concursos novos por minuto e 20 tentativas recusadas por minuto (o SPEC diz "1 atualização por minuto", mas uma atualização pode trazer vários concursos) | premissa adotada |
+| 36 | Fase 4: 2ª fonte (resultadomega) confere data e dezenas de qualquer concurso (concursos.json) e o rateio só do último (ultimo.json); fonte não oficial e de um projeto novo | aberto: avaliar outra fonte de reserva |
+| 37 | Fase 4: não é possível corrigir um concurso já gravado (nunca sobrescreve); só rejeitar o último aguardando | aberto: definir como corrigir erro de dado de concurso confirmado (hoje, só pelo SQL Editor) |
+| 38 | Fase 4: conferência com qualquer concurso (simulação) é pública | decidido pelo usuário em 26/11/2026 |
 | 29 | Cruzamento do gerador: só jogos de bolões **congelados** do mesmo concurso entram como exclusão (rascunhos não bloqueiam; o banco recusa repetição no congelamento) | premissa adotada na Fase 2 (etapa 7) |
 
 ## Premissas

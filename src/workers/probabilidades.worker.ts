@@ -7,6 +7,8 @@ export interface EntradaProb {
   recibos: { k: number; g: number }[]
   semente: number
   sorteios?: number
+  /** jogos REAIS de cada recibo (na mesma ordem de `recibos`); sem isso, sorteia jogos aleatórios */
+  jogosReais?: number[][][]
 }
 
 export type SaidaProb =
@@ -19,9 +21,9 @@ const ctx = self as unknown as { postMessage(m: SaidaProb): void; onmessage: ((e
 
 ctx.onmessage = (e) => {
   try {
-    const { recibos, semente, sorteios } = e.data
+    const { recibos, semente, sorteios, jogosReais } = e.data
     const rng = criarRng(semente)
-    const grupos = recibos.map((r) => Array.from({ length: r.g }, () => sortearDezenas(rng, r.k)))
+    const grupos = jogosReais ?? recibos.map((r) => Array.from({ length: r.g }, () => sortearDezenas(rng, r.k)))
     const resultado = monteCarloGrupos(grupos, {
       sorteios,
       rng: criarRng(semente + 1),

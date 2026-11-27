@@ -6,6 +6,9 @@ import { ChanceExpansivel } from '../Chance'
 import { formatarDataHoraSP, formatarInteiro, formatarReais } from '../formato'
 import { descreverRecibo } from '../plano'
 import { useRegras } from '../regras'
+import { ChancesBolao } from '../ChancesBolao'
+import { ConferenciaBolao, type ParticipanteConferencia } from '../Conferencia'
+import { listarCotas } from '../../data/participantes'
 import { CotasBolao } from './CotasBolao'
 
 const dezenaTexto = (d: number) => String(d).padStart(2, '0')
@@ -125,6 +128,7 @@ export function BolaoDetalhe() {
   const navigate = useNavigate()
   const [bolao, setBolao] = useState<BolaoLinha | null>(null)
   const [recibos, setRecibos] = useState<ReciboDet[]>([])
+  const [partic, setPartic] = useState<ParticipanteConferencia[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [confirmou, setConfirmou] = useState(false)
@@ -141,11 +145,12 @@ export function BolaoDetalhe() {
 
   useEffect(() => {
     let vivo = true
-    void carregarBolao(id).then((r) => {
+    void Promise.all([carregarBolao(id), listarCotas(id)]).then(([r, c]) => {
       if (!vivo) return
       setBolao(r.bolao)
       setRecibos(r.recibos)
       setErro(r.erro)
+      setPartic(c.lista.map((x) => ({ nome: x.participantes?.nome ?? '—', qtd: x.qtd })))
       setCarregando(false)
     })
     return () => {
@@ -238,6 +243,15 @@ export function BolaoDetalhe() {
       )}
 
       <CotasBolao bolao={bolao} custoCent={totalCent} />
+
+      <ChancesBolao jogos={recibos.flatMap((r, i) => r.jogos.map((j) => ({ recibo: i, dezenas: j.dezenas })))} />
+
+      <ConferenciaBolao
+        jogos={recibos.flatMap((r, i) => r.jogos.map((j) => ({ recibo: i, dezenas: j.dezenas })))}
+        nCotas={bolao.n_cotas}
+        concursoAlvo={bolao.concurso_alvo}
+        participantes={partic}
+      />
 
       <h2>Jogos</h2>
       {recibos.map((r) => (
