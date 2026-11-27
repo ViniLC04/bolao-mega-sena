@@ -52,6 +52,9 @@ const ok = (cond: boolean, texto: string, extra = '') => {
 
 const MARCADOR = 'RLS TESTE'
 const PESSOA = 'RLS TESTE PESSOA SECRETA'
+const OUTRA = 'RLS TESTE OUTRA PESSOA'
+const TOKEN_A = randomBytes(32).toString('hex') // link pessoal de teste da PESSOA
+const TOKEN_B = randomBytes(32).toString('hex') // link pessoal de teste da OUTRA
 const CONCURSO = 999_999
 const svc = cab(SECRET)
 const SVC_REP = cab(SECRET, { Prefer: 'return=representation' })
@@ -77,6 +80,7 @@ let usuarioComumId: string | null = null
 let baseFontesId: number | null = null
 let bolaoIdTeste: string | null = null
 let pessoaIdTeste: string | null = null
+let outraIdTeste: string | null = null
 
 async function main() {
   // Linha de base da auditoria, para apagar no fim SÓ o que o teste gerar. Se a leitura falhar, a limpeza da
@@ -116,14 +120,20 @@ async function main() {
   const jogo = await criar('jogos', { recibo_id: reciboId, ordem: 1, dezenas: [1, 2, 3, 4, 5, 6, 7] })
   const jogoId = String(jogo.id)
   await criar('combinacoes_cobertas', { concurso: CONCURSO, combo_rank: 1, bolao_id: bolaoId })
-  const pessoa = await criar('participantes', { nome: PESSOA, contato: 'rls-teste@contato.secreto' })
+  const pessoa = await criar('participantes', { nome: PESSOA, contato: 'rls-teste@contato.secreto', link_token: TOKEN_A, link_ativo: true })
   const pessoaId = String(pessoa.id)
   pessoaIdTeste = pessoaId
+  const outra = await criar('participantes', { nome: OUTRA, link_token: TOKEN_B, link_ativo: true })
+  outraIdTeste = String(outra.id)
+  await criar('cotas', { participante_id: outraIdTeste, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 10_000 })
   const cota = await criar('cotas', { participante_id: pessoaId, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 10_000 })
   const cotaId = String(cota.id)
   const mov = await criar('caixinha_mov', { bolao_id: bolaoId, valor_cent: 100, motivo: 'rls teste' })
   const movId = String(mov.id)
   await criar('fontes_log', { origem: 'rls-teste', resultado: 'rls-teste' })
+  // Uma foto de teste no armazenamento privado (enviada com a chave secreta)
+  const subida = await fetch(`${URL_BASE}/storage/v1/object/recibos/rls-teste/x.jpg`, { method: 'POST', headers: { ...svc, 'Content-Type': 'image/jpeg' }, body: Buffer.from('foto de teste') })
+  if (subida.status >= 300) throw new Error(`Não consegui criar a foto de teste: HTTP ${subida.status} (o SQL da Fase 5 foi rodado?)`)
 
   const clientes: Cliente[] = [
     { nome: 'PÚBLICO (anon)', headers: cab(ANON, { Prefer: 'return=representation' }) },
@@ -209,6 +219,32 @@ async function main() {
       const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, {})
       ok(r.status >= 400, `${fn}() não é chamável de fora`, `HTTP ${r.status}`)
     }
+    // Link pessoal: o token certo mostra só a própria pessoa; token errado não mostra nada
+    const meu = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_participante', { p_token: TOKEN_A })
+    const meuJson = json(meu)
+    ok(
+      meu.status === 200 && Array.isArray(meuJson) && meuJson.length === 1 && meu.texto.includes(MARCADOR) && !meu.texto.includes(OUTRA) && !meu.texto.includes('contato.secreto') && !meu.texto.includes(TOKEN_B),
+      'link pessoal: o token certo mostra só o bolão e as cotas da própria pessoa',
+      `HTTP ${meu.status}`,
+    )
+    const errado = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_participante', { p_token: randomBytes(32).toString('hex') })
+    ok(errado.status === 200 && errado.texto.trim() === '[]', 'link pessoal: token errado não devolve nada', `HTTP ${errado.status}`)
+    const curto = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_participante', { p_token: 'a' })
+    ok(curto.status === 200 && curto.texto.trim() === '[]', 'link pessoal: token curto não devolve nada', `HTTP ${curto.status}`)
+    const jg = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_participante_jogos', { p_token: TOKEN_A, p_bolao: bolaoId })
+    ok(jg.status === 200 && jg.texto.trim() === '[]', 'link pessoal: não mostra jogos de bolão em rascunho', `HTTP ${jg.status}`)
+
+    // Fotos de recibo: o armazenamento é privado
+    const baixar = await fetch(`${URL_BASE}/storage/v1/object/recibos/rls-teste/x.jpg`, { headers: c.headers })
+    ok(baixar.status >= 400, 'fotos de recibo: não baixa', `HTTP ${baixar.status}`)
+    const listar2 = await chamar(c.headers, 'POST', '/storage/v1/object/list/recibos', { prefix: 'rls-teste', limit: 10 })
+    const listaJson = json(listar2)
+    ok(listar2.status >= 400 || (Array.isArray(listaJson) && listaJson.length === 0), 'fotos de recibo: não lista', `HTTP ${listar2.status}`)
+    const enviar = await fetch(`${URL_BASE}/storage/v1/object/recibos/rls-teste/y.jpg`, { method: 'POST', headers: { ...c.headers, 'Content-Type': 'image/jpeg' }, body: Buffer.from('invasor') })
+    ok(enviar.status >= 400, 'fotos de recibo: não envia', `HTTP ${enviar.status}`)
+    const assinar = await chamar(c.headers, 'POST', '/storage/v1/object/sign/recibos/rls-teste/x.jpg', { expiresIn: 60 })
+    ok(assinar.status >= 400, 'fotos de recibo: não gera link temporário', `HTTP ${assinar.status}`)
+
     const adm = await chamar(c.headers, 'POST', '/rest/v1/rpc/is_adm', {})
     ok(adm.status === 200 && adm.texto.trim() === 'false', 'is_adm() responde false', `HTTP ${adm.status} ${adm.texto.slice(0, 20)}`)
   }
@@ -236,7 +272,9 @@ async function main() {
   ok(pp.length === 1 && pp[0].nome === PESSOA, 'o participante continua intacto')
   ok((await listar('participantes', 'nome=eq.INVASOR')).length === 0, 'nenhum participante invasor foi criado')
   const ct = await listar('cotas', `bolao_id=eq.${bolaoId}`)
-  ok(ct.length === 1 && ct[0].qtd === 1 && ct[0].pago === false, 'as cotas continuam intactas')
+  ok(ct.length === 2 && ct.every((x) => x.qtd === 1 && x.pago === false), 'as cotas continuam intactas')
+  const fotoSvc = await fetch(`${URL_BASE}/storage/v1/object/recibos/rls-teste/x.jpg`, { headers: svc })
+  ok(fotoSvc.status === 200, 'a foto de teste continua lá (só a chave secreta a lê)')
   const cx = await listar('caixinha_mov', `bolao_id=eq.${bolaoId}`)
   ok(cx.length === 1 && cx[0].motivo === 'rls teste', 'a caixinha continua intacta')
   ok((await listar('concursos', 'numero=eq.1')).every((x) => x.data === '1996-03-11'), 'o concurso 1 continua com a data original')
@@ -262,7 +300,9 @@ try {
   if (baseFontesId !== null) await del(`fontes_log?id=gt.${baseFontesId}&concurso=is.null&resultado=eq.recusado`)
   if (bolaoIdTeste) await del(`caixinha_mov?bolao_id=eq.${bolaoIdTeste}`)
   if (pessoaIdTeste) await del(`cotas?participante_id=eq.${pessoaIdTeste}`)
-  await del(`participantes?nome=in.(${encodeURIComponent(PESSOA)},INVASOR)`)
+  if (outraIdTeste) await del(`cotas?participante_id=eq.${outraIdTeste}`)
+  await del(`participantes?nome=in.(${encodeURIComponent(PESSOA)},${encodeURIComponent(OUTRA)},INVASOR)`)
+  await chamar(svc, 'DELETE', '/storage/v1/object/recibos/rls-teste/x.jpg').catch(() => null)
   await del(`bolaos?concurso_alvo=eq.${CONCURSO}`) // recibos e jogos saem por cascata
   await del('concursos?numero=in.(999999,999998)') // faixas saem por cascata
   await del('config?chave=in.(rls_teste,rls_invasor)')
