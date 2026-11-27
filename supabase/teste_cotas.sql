@@ -42,6 +42,7 @@ begin
 
   -- 3) marcar pago e via entregue funciona
   update public.cotas set pago = true, via_entregue = true where participante_id = v_p1 and bolao_id = v_b;
+  update public.cotas set pago = true where participante_id = v_p2 and bolao_id = v_b;
 
   -- 4) uma pessoa só tem um registro por bolão
   begin
@@ -81,7 +82,7 @@ begin
       if sqlerrm like 'FALHOU%' then raise; end if;
       if sqlerrm not like '%data limite%' then raise exception 'FALHOU: mensagem inesperada (data limite): %', sqlerrm; end if;
     end;
-    update public.cotas set pago = true where participante_id = v_p2 and bolao_id = v_b;
+    update public.cotas set via_entregue = true where participante_id = v_p2 and bolao_id = v_b;
   end if;
 
   -- 8) visão pública: congela o bolão e olha como o PÚBLICO (anon) enxerga
@@ -121,6 +122,7 @@ begin
   if v_n <> 0 then raise exception 'FALHOU: o público viu jogos de rascunho'; end if;
   execute 'reset role';
 
-  raise exception 'TUDO OK: as verificações de cotas, data limite e visão pública passaram. Este "erro" é o desfazer proposital: nada foi gravado.';
+  raise exception 'TUDO OK: as verificações de cotas e visão pública passaram%. Este "erro" é o desfazer proposital: nada foi gravado.',
+    case when v_lim is null then ' (a data limite NÃO foi testada: não há regras gravadas no banco; grave em Regras → "Gravar as regras padrão no banco")' else ' e a data limite também' end;
 end
 $$;

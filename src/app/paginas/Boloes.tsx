@@ -5,6 +5,7 @@ import { auditarBoloes, type RelatorioAuditoria } from '../../engine/auditoria'
 import { formatarDataHoraSP, formatarInteiro, formatarReais } from '../formato'
 import { descreverRecibo } from '../plano'
 import { useRegras } from '../regras'
+import { CotasBolao } from './CotasBolao'
 
 const dezenaTexto = (d: number) => String(d).padStart(2, '0')
 
@@ -234,6 +235,8 @@ export function BolaoDetalhe() {
           </div>
         </section>
       )}
+
+      <CotasBolao bolao={bolao} custoCent={totalCent} />
 
       <h2>Jogos</h2>
       {recibos.map((r) => (

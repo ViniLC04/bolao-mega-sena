@@ -9,6 +9,7 @@ const ITENS = [
   { to: '/concursos', rotulo: 'Concursos' },
   { to: '/gerador', rotulo: 'Gerador' },
   { to: '/boloes', rotulo: 'Bolões' },
+  { to: '/participantes', rotulo: 'Participantes' },
   { to: '/conta', rotulo: 'Conta' },
 ]
 

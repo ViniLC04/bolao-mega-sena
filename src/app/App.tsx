@@ -8,6 +8,7 @@ import { Concursos } from './paginas/Concursos'
 import { Gerador } from './paginas/Gerador'
 import { Login } from './paginas/Login'
 import { Painel } from './paginas/Painel'
+import { Participantes } from './paginas/Participantes'
 import { Regras } from './paginas/Regras'
 import { Simulador } from './paginas/Simulador'
 import { RegrasProvider } from './regras'
@@ -48,6 +49,7 @@ export function App() {
             <Route path="gerador" element={<Gerador />} />
             <Route path="boloes" element={<Boloes />} />
             <Route path="boloes/:id" element={<BolaoDetalhe />} />
+            <Route path="participantes" element={<Participantes />} />
             <Route path="conta" element={<Conta />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
