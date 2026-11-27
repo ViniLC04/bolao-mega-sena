@@ -7,6 +7,7 @@ import { formatarDataHoraSP, formatarInteiro, formatarReais } from '../formato'
 import { descreverRecibo } from '../plano'
 import { useRegras } from '../regras'
 import { ChancesBolao } from '../ChancesBolao'
+import { FotoRecibo } from '../FotoRecibo'
 import { ConferenciaBolao, type ParticipanteConferencia } from '../Conferencia'
 import { listarCotas } from '../../data/participantes'
 import { CotasBolao } from './CotasBolao'
@@ -266,6 +267,7 @@ export function BolaoDetalhe() {
               </li>
             ))}
           </ul>
+          <FotoRecibo bolaoId={bolao.id} ordem={r.ordem} caminho={r.foto_path} aoMudar={() => void recarregar()} />
         </section>
       ))}
     </>

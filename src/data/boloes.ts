@@ -33,6 +33,8 @@ export interface ReciboDet {
   k: number
   g: number
   total_cent: number
+  /** caminho da foto do recibo no armazenamento privado (null = sem foto) */
+  foto_path: string | null
   jogos: JogoDet[]
 }
 
@@ -50,7 +52,7 @@ export async function listarBoloes(): Promise<{ boloes: BolaoLinha[]; erro: stri
 }
 
 export async function carregarBolao(id: string): Promise<{ bolao: BolaoLinha | null; recibos: ReciboDet[]; erro: string | null }> {
-  const { data, error } = await supabase.from('bolaos').select(`${COLUNAS}, recibos(ordem, k, g, total_cent, jogos(ordem, dezenas, travado))`).eq('id', id).maybeSingle()
+  const { data, error } = await supabase.from('bolaos').select(`${COLUNAS}, recibos(ordem, k, g, total_cent, foto_path, jogos(ordem, dezenas, travado))`).eq('id', id).maybeSingle()
   if (error) return { bolao: null, recibos: [], erro: 'Não consegui ler este bolão.' }
   if (!data) return { bolao: null, recibos: [], erro: 'Bolão não encontrado.' }
   const { recibos: rs, ...bolao } = data as unknown as BolaoLinha & { recibos: ReciboDet[] }

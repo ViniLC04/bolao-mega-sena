@@ -3,6 +3,7 @@ import { trocarSenha } from '../../data/auth'
 import { emailParaUsuario } from '../../data/usuario'
 import { validarSenha } from '../../engine/validacoes'
 import { useAuth } from '../auth'
+import { DoisPassos } from '../DoisPassos'
 
 export function Conta() {
   const { sessao } = useAuth()
@@ -35,6 +36,7 @@ export function Conta() {
       <p>
         Usuário: <strong>{emailParaUsuario(sessao?.user.email ?? '')}</strong>
       </p>
+      <DoisPassos />
       <form className="card" onSubmit={enviar}>
         <h2>Trocar a senha</h2>
         <p className="muted">Mínimo de 8 caracteres, com letra maiúscula, minúscula, número e símbolo. O servidor confere de novo.</p>

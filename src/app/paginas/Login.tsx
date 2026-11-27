@@ -21,9 +21,10 @@ function gravarFalhas(n: number): void {
 }
 
 export function Login() {
-  const { adm, carregando, entrar } = useAuth()
+  const { adm, carregando, entrar, pendenteCodigo, enviarCodigo, sair } = useAuth()
   const [usuario, setUsuario] = useState('')
   const [senha, setSenha] = useState('')
+  const [codigo, setCodigo] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
   const [falhas, setFalhas] = useState(lerFalhas)
@@ -36,6 +37,23 @@ export function Login() {
   }, [espera > 0]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!carregando && adm) return <Navigate to="/" replace />
+
+  async function enviarOCodigo(e: FormEvent) {
+    e.preventDefault()
+    if (espera > 0 || enviando) return
+    setEnviando(true)
+    setErro(null)
+    const mensagem = await enviarCodigo(codigo)
+    setEnviando(false)
+    if (mensagem) {
+      const n = falhas + 1
+      setFalhas(n)
+      gravarFalhas(n)
+      setEspera(esperaAposFalhas(n))
+      setErro(mensagem)
+      setCodigo('')
+    } else gravarFalhas(0)
+  }
 
   async function enviar(e: FormEvent) {
     e.preventDefault()
@@ -54,6 +72,30 @@ export function Login() {
     } else {
       gravarFalhas(0)
     }
+  }
+
+  if (pendenteCodigo) {
+    return (
+      <div className="login">
+        <form className="card login-caixa" onSubmit={enviarOCodigo}>
+          <h1>Verificação em 2 passos</h1>
+          <p className="muted">Abra o aplicativo autenticador no celular e digite o código de 6 números do Bolão da Mega da Virada.</p>
+          <label className="campo">
+            <span>Código</span>
+            <input value={codigo} onChange={(e) => setCodigo(e.target.value)} inputMode="numeric" autoComplete="one-time-code" maxLength={7} autoFocus required />
+          </label>
+          {erro && <p className="erro" role="alert">{erro}</p>}
+          {espera > 0 && <p className="aviso">Muitas tentativas erradas. Aguarde {espera} s para tentar de novo.</p>}
+          <button type="submit" className="primario" disabled={enviando || espera > 0}>
+            {enviando ? 'Conferindo…' : 'Confirmar'}
+          </button>
+          <button type="button" className="secundario" onClick={() => void sair()}>
+            Cancelar e sair
+          </button>
+          <p className="muted pequeno">Perdeu o celular? Veja “Se você perder o celular” em docs/seguranca.md (remover o fator no painel do Supabase).</p>
+        </form>
+      </div>
+    )
   }
 
   return (

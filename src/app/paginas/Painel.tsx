@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { contar } from '../../data/contagens'
 import { configurado } from '../../data/supabase'
+import { AvisoDoisPassos } from '../DoisPassos'
 import { contagemRegressiva, formatarDataHoraSP, formatarDataIso, formatarInteiro } from '../formato'
 import { useRegras } from '../regras'
 
@@ -34,6 +35,7 @@ export function Painel() {
   return (
     <>
       <h1>Painel</h1>
+      <AvisoDoisPassos />
       <div className="grade">
         <section className="card">
           <h2>Prazo das apostas</h2>

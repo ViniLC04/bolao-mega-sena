@@ -25,8 +25,9 @@ const Simulador = carregar(() => import('./paginas/Simulador'), 'Simulador')
 
 /** Só deixa passar quem está logado E é o ADM; os demais vão para o login. */
 function RotaAdm() {
-  const { carregando, sessao, adm } = useAuth()
+  const { carregando, sessao, adm, pendenteCodigo } = useAuth()
   if (carregando) return <p className="carregando">Carregando…</p>
+  if (sessao && !adm && pendenteCodigo) return <Navigate to="/entrar" replace />
   if (!sessao || !adm) return <Navigate to="/publico" replace />
   return <Layout />
 }
