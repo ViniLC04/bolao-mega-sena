@@ -349,6 +349,11 @@ grant select on public.admins, public.auditoria, public.combinacoes_cobertas to 
 grant select, insert, update, delete on public.config, public.bolaos, public.recibos, public.jogos to authenticated;
 grant usage on all sequences in schema public to authenticated;
 
+-- Chave secreta (service_role): só o servidor e o script de teste usam; nunca vai ao navegador.
+grant all on all tables    in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+grant execute on all functions in schema public to service_role;
+
 -- ---------- Políticas ----------
 drop policy if exists admins_ler_proprio on public.admins;
 create policy admins_ler_proprio on public.admins for select to authenticated using (user_id = auth.uid());
