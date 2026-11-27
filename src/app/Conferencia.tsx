@@ -39,6 +39,8 @@ export function ConferenciaBolao({
   const [consultado, setConsultado] = useState(concursoAlvo)
   const [concurso, setConcurso] = useState<ConcursoCompleto | null | undefined>(undefined)
   const [erro, setErro] = useState<string | null>(null)
+  // Cada clique em "Conferir" soma 1: assim a consulta roda de novo mesmo que o número seja o mesmo de antes.
+  const [tentativa, setTentativa] = useState(0)
 
   useEffect(() => {
     let vivo = true
@@ -50,7 +52,7 @@ export function ConferenciaBolao({
     return () => {
       vivo = false
     }
-  }, [consultado])
+  }, [consultado, tentativa])
 
   const recibos = useMemo(() => {
     const ordens = [...new Set(jogos.map((j) => j.recibo))].sort((a, b) => a - b)
@@ -70,6 +72,7 @@ export function ConferenciaBolao({
     setErro(null)
     setConcurso(undefined)
     setConsultado(n)
+    setTentativa((t) => t + 1)
   }
 
   const simulacao = consultado !== concursoAlvo
@@ -97,6 +100,7 @@ export function ConferenciaBolao({
               setConsultado(concursoAlvo)
               setConcurso(undefined)
               setErro(null)
+              setTentativa((t) => t + 1)
             }}
           >
             Voltar ao concurso {concursoAlvo}
