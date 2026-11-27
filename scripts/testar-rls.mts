@@ -51,6 +51,7 @@ const ok = (cond: boolean, texto: string, extra = '') => {
 }
 
 const MARCADOR = 'RLS TESTE'
+const PESSOA = 'RLS TESTE PESSOA SECRETA'
 const CONCURSO = 999_999
 const svc = cab(SECRET)
 const SVC_REP = cab(SECRET, { Prefer: 'return=representation' })
@@ -73,6 +74,8 @@ interface Cliente { nome: string; headers: Record<string, string> }
 // Guardados já no começo para a limpeza do fim funcionar mesmo se a preparação falhar no meio.
 let baseAuditoriaId: number | null = null
 let usuarioComumId: string | null = null
+let bolaoIdTeste: string | null = null
+let pessoaIdTeste: string | null = null
 
 async function main() {
   // Linha de base da auditoria, para apagar no fim SÓ o que o teste gerar. Se a leitura falhar, a limpeza da
@@ -101,18 +104,26 @@ async function main() {
   await criar('rules_versions', { vigencia_inicio: '2098-01-01', json: { teste: true } })
   const bolao = await criar('bolaos', { concurso_alvo: CONCURSO, nome: MARCADOR, n_cotas: 2 })
   const bolaoId = String(bolao.id)
+  bolaoIdTeste = bolaoId
   const recibo = await criar('recibos', { bolao_id: bolaoId, ordem: 1, k: 7, g: 1, total_cent: 4200, cotas_n: 2 })
   const reciboId = String(recibo.id)
   const jogo = await criar('jogos', { recibo_id: reciboId, ordem: 1, dezenas: [1, 2, 3, 4, 5, 6, 7] })
   const jogoId = String(jogo.id)
   await criar('combinacoes_cobertas', { concurso: CONCURSO, combo_rank: 1, bolao_id: bolaoId })
+  const pessoa = await criar('participantes', { nome: PESSOA, contato: 'rls-teste@contato.secreto' })
+  const pessoaId = String(pessoa.id)
+  pessoaIdTeste = pessoaId
+  const cota = await criar('cotas', { participante_id: pessoaId, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 10_000 })
+  const cotaId = String(cota.id)
+  const mov = await criar('caixinha_mov', { bolao_id: bolaoId, valor_cent: 100, motivo: 'rls teste' })
+  const movId = String(mov.id)
 
   const clientes: Cliente[] = [
     { nome: 'PÚBLICO (anon)', headers: cab(ANON, { Prefer: 'return=representation' }) },
     { nome: 'USUÁRIO COMUM logado', headers: { apikey: ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' } },
   ]
 
-  const tabelasAdm = ['admins', 'config', 'auditoria', 'bolaos', 'recibos', 'jogos', 'combinacoes_cobertas']
+  const tabelasAdm = ['admins', 'config', 'auditoria', 'bolaos', 'recibos', 'jogos', 'combinacoes_cobertas', 'participantes', 'cotas', 'caixinha_mov']
   const tabelasPublicas = ['rules_versions', 'concursos', 'concurso_faixas']
 
   // Para cada tabela: um INSERT que seria VÁLIDO, uma alteração e uma exclusão de linha que existe.
@@ -124,6 +135,9 @@ async function main() {
     recibos: { insere: { bolao_id: bolaoId, ordem: 9, k: 7, g: 1, total_cent: 4200, cotas_n: 2 }, filtro: `id=eq.${reciboId}`, altera: { g: 5 } },
     jogos: { insere: { recibo_id: reciboId, ordem: 9, dezenas: [1, 2, 3, 4, 5, 6, 7] }, filtro: `id=eq.${jogoId}`, altera: { travado: true } },
     combinacoes_cobertas: { insere: { concurso: CONCURSO, combo_rank: 2, bolao_id: bolaoId }, filtro: `concurso=eq.${CONCURSO}`, altera: { combo_rank: 3 } },
+    participantes: { insere: { nome: 'INVASOR' }, filtro: `id=eq.${pessoaId}`, altera: { nome: 'INVASOR' } },
+    cotas: { insere: { participante_id: pessoaId, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 1 }, filtro: `id=eq.${cotaId}`, altera: { pago: true } },
+    caixinha_mov: { insere: { bolao_id: bolaoId, valor_cent: 1, motivo: 'invasor' }, filtro: `id=eq.${movId}`, altera: { motivo: 'invasor' } },
     rules_versions: { insere: { vigencia_inicio: '2099-01-01', json: {} }, filtro: 'vigencia_inicio=eq.2098-01-01', altera: { json: { x: 1 } } },
     concursos: { insere: { numero: 999_998, data: '2099-01-01', dezenas: [1, 2, 3, 4, 5, 6], fonte: 'invasor', status: 'confirmado' }, filtro: `numero=eq.${CONCURSO}`, altera: { fonte: 'invasor' } },
     concurso_faixas: { insere: { concurso: CONCURSO, faixa: 4, ganhadores: 0, valor_cent: 0 }, filtro: `concurso=eq.${CONCURSO}`, altera: { ganhadores: 9 } },
@@ -166,6 +180,15 @@ async function main() {
     // FUNÇÕES
     const cong = await chamar(c.headers, 'POST', '/rest/v1/rpc/congelar_bolao', { p_bolao: bolaoId, p_hash: 'a'.repeat(64), p_ranks: [5, 6] })
     ok(cong.status >= 400, 'congelar_bolao é recusada', `HTTP ${cong.status}`)
+    // Visão pública: funciona, mas NUNCA traz nomes, contatos nem rascunhos
+    for (const [fn, corpo] of [['publico_boloes', {}], ['publico_jogos', { p_bolao: bolaoId }]] as const) {
+      const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, corpo)
+      ok(r.status === 200 && !r.texto.includes(PESSOA) && !r.texto.includes('contato.secreto') && !r.texto.includes(MARCADOR), `${fn}() responde sem nome, contato nem rascunho`, `HTTP ${r.status}`)
+    }
+    for (const fn of ['data_limite_vigente', 'cotas_validar']) {
+      const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, {})
+      ok(r.status >= 400, `${fn}() não é chamável de fora`, `HTTP ${r.status}`)
+    }
     const adm = await chamar(c.headers, 'POST', '/rest/v1/rpc/is_adm', {})
     ok(adm.status === 200 && adm.texto.trim() === 'false', 'is_adm() responde false', `HTTP ${adm.status} ${adm.texto.slice(0, 20)}`)
   }
@@ -189,6 +212,13 @@ async function main() {
   ok(cs.length === 1 && cs[0].fonte === 'rls-teste', 'os concursos continuam intactos e sem invasor')
   const fx = await listar('concurso_faixas', `concurso=eq.${CONCURSO}`)
   ok(fx.length === 1 && fx[0].ganhadores === 0, 'as faixas continuam intactas e sem invasora')
+  const pp = await listar('participantes', `id=eq.${pessoaId}`)
+  ok(pp.length === 1 && pp[0].nome === PESSOA, 'o participante continua intacto')
+  ok((await listar('participantes', 'nome=eq.INVASOR')).length === 0, 'nenhum participante invasor foi criado')
+  const ct = await listar('cotas', `bolao_id=eq.${bolaoId}`)
+  ok(ct.length === 1 && ct[0].qtd === 1 && ct[0].pago === false, 'as cotas continuam intactas')
+  const cx = await listar('caixinha_mov', `bolao_id=eq.${bolaoId}`)
+  ok(cx.length === 1 && cx[0].motivo === 'rls teste', 'a caixinha continua intacta')
   const ad = await listar('admins', `user_id=eq.${comumId}`)
   ok(ad.length === 0, 'o usuário comum NÃO virou ADM')
   const au = await listar('auditoria', 'acao=in.(invasor)')
@@ -205,6 +235,10 @@ try {
   // Limpa tudo, mesmo se algo acima falhou (a chave secreta ignora RLS, mas gatilhos continuam valendo).
   const del = (caminho: string) => chamar(svc, 'DELETE', `/rest/v1/${caminho}`).catch(() => null)
   await del(`combinacoes_cobertas?concurso=eq.${CONCURSO}`)
+  // Só mexe no que o teste criou (por id do bolão e da pessoa de teste), nunca em dados reais.
+  if (bolaoIdTeste) await del(`caixinha_mov?bolao_id=eq.${bolaoIdTeste}`)
+  if (pessoaIdTeste) await del(`cotas?participante_id=eq.${pessoaIdTeste}`)
+  await del(`participantes?nome=in.(${encodeURIComponent(PESSOA)},INVASOR)`)
   await del(`bolaos?concurso_alvo=eq.${CONCURSO}`) // recibos e jogos saem por cascata
   await del('concursos?numero=in.(999999,999998)') // faixas saem por cascata
   await del('config?chave=in.(rls_teste,rls_invasor)')

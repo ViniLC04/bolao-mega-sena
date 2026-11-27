@@ -2,6 +2,7 @@
 export * from './acertos'
 export * from './bolao'
 export * from './combinatoria'
+export * from './cotas'
 export * from './gerador'
 export * from './hash'
 export * from './historico'
