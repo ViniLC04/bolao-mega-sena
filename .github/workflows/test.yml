@@ -20,3 +20,5 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Conferir que o pacote publicado não tem chave secreta
+        run: npm run verificar

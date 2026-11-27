@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "checar-segredos": "node scripts/checar-segredos.mjs",
+    "verificar": "node scripts/verificar-build.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
