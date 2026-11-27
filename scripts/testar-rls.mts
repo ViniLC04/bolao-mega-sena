@@ -302,7 +302,7 @@ try {
   if (pessoaIdTeste) await del(`cotas?participante_id=eq.${pessoaIdTeste}`)
   if (outraIdTeste) await del(`cotas?participante_id=eq.${outraIdTeste}`)
   await del(`participantes?nome=in.(${encodeURIComponent(PESSOA)},${encodeURIComponent(OUTRA)},INVASOR)`)
-  await chamar(svc, 'DELETE', '/storage/v1/object/recibos/rls-teste/x.jpg').catch(() => null)
+  await chamar(svc, 'DELETE', '/storage/v1/object/recibos', { prefixes: ['rls-teste/x.jpg', 'rls-teste/y.jpg'] }).catch(() => null)
   await del(`bolaos?concurso_alvo=eq.${CONCURSO}`) // recibos e jogos saem por cascata
   await del('concursos?numero=in.(999999,999998)') // faixas saem por cascata
   await del('config?chave=in.(rls_teste,rls_invasor)')
