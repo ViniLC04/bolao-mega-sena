@@ -74,6 +74,7 @@ interface Cliente { nome: string; headers: Record<string, string> }
 // Guardados já no começo para a limpeza do fim funcionar mesmo se a preparação falhar no meio.
 let baseAuditoriaId: number | null = null
 let usuarioComumId: string | null = null
+let baseFontesId: number | null = null
 let bolaoIdTeste: string | null = null
 let pessoaIdTeste: string | null = null
 
@@ -85,6 +86,11 @@ async function main() {
   if (rBase.status === 200 && Array.isArray(vBase)) {
     baseAuditoriaId = vBase.length ? Number((vBase[0] as { id: number }).id) : 0
   }
+
+  // Idem para o registro das atualizações de concursos (as tentativas recusadas do teste serão apagadas no fim).
+  const rFonte = await chamar(svc, 'GET', '/rest/v1/fontes_log?select=id&order=id.desc&limit=1')
+  const vFonte = json(rFonte)
+  if (rFonte.status === 200 && Array.isArray(vFonte)) baseFontesId = vFonte.length ? Number((vFonte[0] as { id: number }).id) : 0
 
   // Usuário comum (NÃO é ADM) para provar que "estar logado" não basta.
   const email = `rls-teste-${Date.now()}@example.com`
@@ -117,13 +123,14 @@ async function main() {
   const cotaId = String(cota.id)
   const mov = await criar('caixinha_mov', { bolao_id: bolaoId, valor_cent: 100, motivo: 'rls teste' })
   const movId = String(mov.id)
+  await criar('fontes_log', { origem: 'rls-teste', resultado: 'rls-teste' })
 
   const clientes: Cliente[] = [
     { nome: 'PÚBLICO (anon)', headers: cab(ANON, { Prefer: 'return=representation' }) },
     { nome: 'USUÁRIO COMUM logado', headers: { apikey: ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' } },
   ]
 
-  const tabelasAdm = ['admins', 'config', 'auditoria', 'bolaos', 'recibos', 'jogos', 'combinacoes_cobertas', 'participantes', 'cotas', 'caixinha_mov']
+  const tabelasAdm = ['admins', 'config', 'auditoria', 'bolaos', 'recibos', 'jogos', 'combinacoes_cobertas', 'participantes', 'cotas', 'caixinha_mov', 'fontes_log']
   const tabelasPublicas = ['rules_versions', 'concursos', 'concurso_faixas']
 
   // Para cada tabela: um INSERT que seria VÁLIDO, uma alteração e uma exclusão de linha que existe.
@@ -137,6 +144,7 @@ async function main() {
     combinacoes_cobertas: { insere: { concurso: CONCURSO, combo_rank: 2, bolao_id: bolaoId }, filtro: `concurso=eq.${CONCURSO}`, altera: { combo_rank: 3 } },
     participantes: { insere: { nome: 'INVASOR' }, filtro: `id=eq.${pessoaId}`, altera: { nome: 'INVASOR' } },
     cotas: { insere: { participante_id: pessoaId, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 1 }, filtro: `id=eq.${cotaId}`, altera: { pago: true } },
+    fontes_log: { insere: { origem: 'invasor', resultado: 'invasor' }, filtro: 'origem=eq.rls-teste', altera: { resultado: 'invasor' } },
     caixinha_mov: { insere: { bolao_id: bolaoId, valor_cent: 1, motivo: 'invasor' }, filtro: `id=eq.${movId}`, altera: { motivo: 'invasor' } },
     rules_versions: { insere: { vigencia_inicio: '2099-01-01', json: {} }, filtro: 'vigencia_inicio=eq.2098-01-01', altera: { json: { x: 1 } } },
     concursos: { insere: { numero: 999_998, data: '2099-01-01', dezenas: [1, 2, 3, 4, 5, 6], fonte: 'invasor', status: 'confirmado' }, filtro: `numero=eq.${CONCURSO}`, altera: { fonte: 'invasor' } },
@@ -185,6 +193,18 @@ async function main() {
       const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, corpo)
       ok(r.status === 200 && !r.texto.includes(PESSOA) && !r.texto.includes('contato.secreto') && !r.texto.includes(MARCADOR), `${fn}() responde sem nome, contato nem rascunho`, `HTTP ${r.status}`)
     }
+    // Atualizar concursos: o visitante só consegue enviar o PRÓXIMO da sequência; o que já existe nunca é sobrescrito
+    const reg = await chamar(c.headers, 'POST', '/rest/v1/rpc/registrar_concurso', {
+      p_dados: { numero: 1, data: '2099-01-01', dezenas: [1, 2, 3, 4, 5, 6], faixas: [{ faixa: 4, ganhadores: 0, valor_cent: 0 }, { faixa: 5, ganhadores: 0, valor_cent: 0 }, { faixa: 6, ganhadores: 0, valor_cent: 0 }] },
+    })
+    const regJson = json(reg) as { ok?: boolean } | null
+    ok(reg.status === 200 && regJson?.ok === false, 'registrar_concurso recusa um concurso que já existe', `HTTP ${reg.status} ${reg.texto.slice(0, 60)}`)
+    for (const fn of ['confirmar_concurso', 'rejeitar_concurso']) {
+      const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, { p_numero: 1 })
+      ok(r.status >= 400, `${fn}() é recusada`, `HTTP ${r.status}`)
+    }
+    const vir = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_viradas', {})
+    ok(vir.status === 200, 'publico_viradas() responde', `HTTP ${vir.status}`)
     for (const fn of ['data_limite_vigente', 'cotas_validar']) {
       const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, {})
       ok(r.status >= 400, `${fn}() não é chamável de fora`, `HTTP ${r.status}`)
@@ -219,6 +239,8 @@ async function main() {
   ok(ct.length === 1 && ct[0].qtd === 1 && ct[0].pago === false, 'as cotas continuam intactas')
   const cx = await listar('caixinha_mov', `bolao_id=eq.${bolaoId}`)
   ok(cx.length === 1 && cx[0].motivo === 'rls teste', 'a caixinha continua intacta')
+  ok((await listar('concursos', 'numero=eq.1')).every((x) => x.data === '1996-03-11'), 'o concurso 1 continua com a data original')
+  ok((await listar('fontes_log', 'origem=eq.invasor')).length === 0, 'ninguém gravou no registro das fontes')
   const ad = await listar('admins', `user_id=eq.${comumId}`)
   ok(ad.length === 0, 'o usuário comum NÃO virou ADM')
   const au = await listar('auditoria', 'acao=in.(invasor)')
@@ -236,6 +258,8 @@ try {
   const del = (caminho: string) => chamar(svc, 'DELETE', `/rest/v1/${caminho}`).catch(() => null)
   await del(`combinacoes_cobertas?concurso=eq.${CONCURSO}`)
   // Só mexe no que o teste criou (por id do bolão e da pessoa de teste), nunca em dados reais.
+  await del('fontes_log?origem=in.(rls-teste,invasor)')
+  if (baseFontesId !== null) await del(`fontes_log?id=gt.${baseFontesId}&concurso=is.null&resultado=eq.recusado`)
   if (bolaoIdTeste) await del(`caixinha_mov?bolao_id=eq.${bolaoIdTeste}`)
   if (pessoaIdTeste) await del(`cotas?participante_id=eq.${pessoaIdTeste}`)
   await del(`participantes?nome=in.(${encodeURIComponent(PESSOA)},INVASOR)`)

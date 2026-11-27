@@ -58,7 +58,7 @@ export function Publico() {
       )}
 
       <p className="muted pequeno" style={{ marginTop: 24 }}>
-        Nesta página não aparecem nomes de ninguém. <Link to="/entrar">Sou o organizador</Link>
+        Nesta página não aparecem nomes de ninguém. <Link to="/fontes">Fontes dos dados e atualizar concursos</Link> · <Link to="/entrar">Sou o organizador</Link>
       </p>
     </div>
   )

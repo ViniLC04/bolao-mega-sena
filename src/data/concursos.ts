@@ -30,6 +30,40 @@ export async function carregarConcursos(): Promise<{ concursos: ConcursoResumo[]
   return { concursos: todos, erro: null }
 }
 
+export interface ConcursoRecente extends ConcursoResumo {
+  status: 'confirmado' | 'aguardando' | 'oficial_importado'
+  fonte: string
+  obtido_em: string
+}
+
+export const NOMES_STATUS: Record<ConcursoRecente['status'], string> = {
+  confirmado: 'Confirmado',
+  aguardando: 'Aguardando confirmação',
+  oficial_importado: 'Oficial importado',
+}
+
+/** Os últimos concursos gravados, com origem e status (selo de confiança). */
+export async function carregarRecentes(n = 10): Promise<{ lista: ConcursoRecente[]; erro: string | null }> {
+  const { data, error } = await supabase
+    .from('concursos')
+    .select('numero, data, dezenas, status, fonte, obtido_em')
+    .order('numero', { ascending: false })
+    .limit(n)
+  if (error) return { lista: [], erro: 'Não consegui ler os concursos do banco.' }
+  return { lista: (data ?? []) as ConcursoRecente[], erro: null }
+}
+
+/** Quantos concursos há em cada status. */
+export async function contarPorStatus(): Promise<Record<ConcursoRecente['status'], number> | null> {
+  const r: Record<ConcursoRecente['status'], number> = { confirmado: 0, aguardando: 0, oficial_importado: 0 }
+  for (const s of Object.keys(r) as ConcursoRecente['status'][]) {
+    const { count, error } = await supabase.from('concursos').select('numero', { count: 'exact', head: true }).eq('status', s)
+    if (error) return null
+    r[s] = count ?? 0
+  }
+  return r
+}
+
 export interface ComparacaoPlanilha {
   /** concursos da planilha que ainda não estão no banco */
   novos: ConcursoPlanilha[]

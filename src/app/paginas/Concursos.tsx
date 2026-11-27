@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useState } from 'react'
+import { confirmarConcurso, rejeitarConcurso } from '../../data/caixa'
 import {
   carregarConcursos,
+  carregarRecentes,
   carregarViradas,
   compararComBanco,
   inserirConcursos,
   lerListaNumeros,
+  NOMES_STATUS,
   salvarViradas,
   sugerirViradas,
   type ComparacaoPlanilha,
+  type ConcursoRecente,
   type ConcursoResumo,
 } from '../../data/concursos'
 import { lerPlanilhaXlsx, validarConcursos, type ConcursoPlanilha } from '../../data/planilha'
-import { formatarDataIso, formatarInteiro } from '../formato'
+import { AtualizarConcursos } from '../AtualizarConcursos'
+import { formatarDataHoraSP, formatarDataIso, formatarInteiro } from '../formato'
 
 const dezenasTexto = (d: number[]) => [...d].sort((a, b) => a - b).map((x) => String(x).padStart(2, '0')).join(' ')
 
@@ -32,20 +37,25 @@ export function Concursos() {
   const [viradasTexto, setViradasTexto] = useState('')
   const [viradasMsg, setViradasMsg] = useState<{ ok: boolean; texto: string } | null>(null)
 
+  const [recentes, setRecentes] = useState<ConcursoRecente[]>([])
+  const [msgStatus, setMsgStatus] = useState<string | null>(null)
+
   const recarregar = useCallback(async () => {
-    const r = await carregarConcursos()
+    const [r, rec] = await Promise.all([carregarConcursos(), carregarRecentes(10)])
     setErroBanco(r.erro)
     setBanco(r.erro ? null : r.concursos)
+    setRecentes(rec.lista)
     return r.concursos
   }, [])
 
   useEffect(() => {
     let vivo = true
     void (async () => {
-      const [r, v] = await Promise.all([carregarConcursos(), carregarViradas()])
+      const [r, v, rec] = await Promise.all([carregarConcursos(), carregarViradas(), carregarRecentes(10)])
       if (!vivo) return
       setErroBanco(r.erro ?? v.erro)
       setBanco(r.erro ? null : r.concursos)
+      setRecentes(rec.lista)
       setViradasTexto(v.numeros.join(', '))
     })()
     return () => {
@@ -93,7 +103,14 @@ export function Concursos() {
   }
 
   const ultimo = banco && banco.length > 0 ? banco[banco.length - 1] : null
-  const recentes = banco ? banco.slice(-10).reverse() : []
+
+  async function decidir(numero: number, acao: 'confirmar' | 'rejeitar') {
+    if (acao === 'rejeitar' && !window.confirm(`Rejeitar o concurso ${numero}? Ele será apagado da lista (só vale para concurso ainda aguardando).`)) return
+    setMsgStatus(null)
+    const e = acao === 'confirmar' ? await confirmarConcurso(numero) : await rejeitarConcurso(numero)
+    if (e) setMsgStatus(e)
+    else await recarregar()
+  }
 
   return (
     <>
@@ -116,6 +133,11 @@ export function Concursos() {
         ) : (
           <p>Nenhum concurso gravado ainda. Importe a planilha abaixo.</p>
         )}
+      </section>
+
+      <section className="card" style={{ marginTop: 12 }}>
+        <h2>Atualizar pela Caixa</h2>
+        <AtualizarConcursos aoTerminar={() => void recarregar()} />
       </section>
 
       <section className="card" style={{ marginTop: 12 }}>
@@ -195,6 +217,7 @@ export function Concursos() {
       {recentes.length > 0 && (
         <>
           <h2>Últimos concursos</h2>
+          {msgStatus && <p className="erro">{msgStatus}</p>}
           <div className="tabela-rolavel">
             <table>
               <thead>
@@ -202,14 +225,35 @@ export function Concursos() {
                   <th>Concurso</th>
                   <th>Data</th>
                   <th>Dezenas</th>
+                  <th>Situação</th>
+                  <th>Origem</th>
                 </tr>
               </thead>
               <tbody>
-                {recentes.map((c) => (
+                {recentes.map((c, i) => (
                   <tr key={c.numero}>
                     <td>{c.numero}</td>
                     <td>{formatarDataIso(c.data)}</td>
                     <td>{dezenasTexto(c.dezenas)}</td>
+                    <td>
+                      {NOMES_STATUS[c.status]}
+                      {c.status === 'aguardando' && (
+                        <>
+                          <br />
+                          <button type="button" className="primario pequeno" onClick={() => void decidir(c.numero, 'confirmar')}>
+                            Confirmar
+                          </button>{' '}
+                          {i === 0 && (
+                            <button type="button" className="secundario pequeno" onClick={() => void decidir(c.numero, 'rejeitar')}>
+                              Rejeitar
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </td>
+                    <td className="pequeno">
+                      {c.fonte}, obtido em {formatarDataHoraSP(c.obtido_em)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
