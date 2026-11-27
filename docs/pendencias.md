@@ -54,7 +54,7 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 32 | Link pessoal secreto por participante (SPEC 11) | **feito na Fase 5** (só o(s) bolão(ões) da própria pessoa) |
 | 39 | Fase 5: recuperar o celular do 2 passos exige remover o fator no painel do Supabase (não há códigos de reserva) | documentado em `docs/seguranca.md` |
 | 40 | Fase 5: restauração de backup é feita junto com o assistente (`docs/restaurar.md`), ainda não testada com banco vazio | aberto |
-| 41 | Fase 5: projetos de teste da Fase 0 na Cloudflare (`bolao-spike-caixa`, worker de teste) ainda existem | aberto: apagar só com o ok do usuário |
+| 41 | Fase 5: projetos de teste da Fase 0 na Cloudflare (`bolao-spike-caixa` em Pages e os workers `bolao-spike-caixa` e `bolao-spike-caixa-br`) | **apagados em 27/11/2026** com o ok do usuário. O teste de visitante fora do Brasil (pendência 5) passa a exigir recriar a página de teste (`spikes/caixa.html`) |
 | 33 | Data limite no servidor só vale se as regras estiverem gravadas no banco (Regras → "Gravar as regras padrão no banco"); sem isso, só a tela bloqueia | aberto: gravar as regras no banco antes de abrir as cotas |
 | 34 | Fase 4: concurso enviado por visitante entra "aguardando confirmação"; só o ADM confirma (ou grava direto "confirmado" se as 2 fontes batem). Se alguém enviar resultado falso, o ADM usa "Rejeitar" (só o último concurso, só aguardando) | decidido pelo usuário em 26/11/2026 |
 | 35 | Fase 4: limite do servidor = 5 concursos novos por minuto e 20 tentativas recusadas por minuto (o SPEC diz "1 atualização por minuto", mas uma atualização pode trazer vários concursos) | premissa adotada |
