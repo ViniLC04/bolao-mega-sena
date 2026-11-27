@@ -5,6 +5,7 @@ import { Layout } from './Layout'
 import { Conta } from './paginas/Conta'
 import { Concursos } from './paginas/Concursos'
 import { EmConstrucao } from './paginas/EmConstrucao'
+import { Gerador } from './paginas/Gerador'
 import { Login } from './paginas/Login'
 import { Painel } from './paginas/Painel'
 import { Regras } from './paginas/Regras'
@@ -44,7 +45,7 @@ export function App() {
             <Route path="regras" element={<Regras />} />
             <Route path="simulador" element={<Simulador />} />
             <Route path="concursos" element={<Concursos />} />
-            <Route path="gerador" element={<EmConstrucao titulo="Gerador de jogos" etapa="Etapa 6" />} />
+            <Route path="gerador" element={<Gerador />} />
             <Route path="boloes" element={<EmConstrucao titulo="Bolões" etapa="Etapa 7" />} />
             <Route path="conta" element={<Conta />} />
           </Route>
