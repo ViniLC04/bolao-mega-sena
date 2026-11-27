@@ -3,6 +3,7 @@ import { configurado } from '../data/supabase'
 import { AuthProvider, useAuth } from './auth'
 import { Layout } from './Layout'
 import { Conta } from './paginas/Conta'
+import { Concursos } from './paginas/Concursos'
 import { EmConstrucao } from './paginas/EmConstrucao'
 import { Login } from './paginas/Login'
 import { Painel } from './paginas/Painel'
@@ -42,7 +43,7 @@ export function App() {
             <Route index element={<Painel />} />
             <Route path="regras" element={<Regras />} />
             <Route path="simulador" element={<Simulador />} />
-            <Route path="concursos" element={<EmConstrucao titulo="Concursos" etapa="Etapa 5" />} />
+            <Route path="concursos" element={<Concursos />} />
             <Route path="gerador" element={<EmConstrucao titulo="Gerador de jogos" etapa="Etapa 6" />} />
             <Route path="boloes" element={<EmConstrucao titulo="Bolões" etapa="Etapa 7" />} />
             <Route path="conta" element={<Conta />} />
