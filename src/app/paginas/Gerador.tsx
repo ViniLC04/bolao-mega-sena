@@ -5,6 +5,7 @@ import { carregarConcursos, carregarViradas, type ConcursoResumo } from '../../d
 import { carregarJogosOutrosBoloes, type JogosOutros } from '../../data/jogos'
 import { AVISO_RESTRICAO, type JogoGerado, type Premissas, type Relatorio, type ResultadoGeracao } from '../../engine/gerador'
 import { filtrarPeriodo, mascarasDe, sugestaoSoma } from '../../engine/historico'
+import { ChanceExpansivel } from '../Chance'
 import { formatarInteiro, hojeIsoSP } from '../formato'
 import { descreverRecibo, type PlanoBolao } from '../plano'
 import { deFormPremissas, dependeDoPeriodo, FORM_PADRAO, NOMES_PERIODO, periodoDeForm, type FormPremissas, type TipoPeriodo } from '../premissasForm'
@@ -456,7 +457,7 @@ function Resultado({ plano, atual, ocupado, aoTrocar, aoTravar }: { plano: Plano
           </li>
           <li>Maior sobreposição entre dois jogos: {r.sobreposicaoMaxima} dezenas iguais</li>
           <li>Maior sobreposição com jogos de outros bolões: {r.sobreposicaoMaximaComOutros} dezenas iguais</li>
-          <li>Chance de sena do bolão inteiro: 1 em <strong>{formatarInteiro(Math.round(r.senaUmEm))}</strong></li>
+          <li>Chance de sena do bolão inteiro: <ChanceExpansivel p={1 / r.senaUmEm} /></li>
           <li className="muted pequeno">Semente: {atual.semente}</li>
         </ul>
         {r.avisos.length > 0 && (

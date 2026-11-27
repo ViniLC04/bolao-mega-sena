@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { formatarInteiro, formatarPct, formatarReais, parseReais } from '../formato'
+import { BotaoCasas, Chance, ChanceExpansivel } from '../Chance'
+import { formatarInteiro, formatarReais, parseReais } from '../formato'
+import { useCasas } from '../useCasas'
 import { descreverRecibo, planoDeLinha } from '../plano'
 import { useRegras } from '../regras'
 import { useProbabilidades } from '../useProbabilidades'
@@ -23,10 +25,10 @@ const MODOS: { id: Modo; rotulo: string }[] = [
   { id: 'inverso', rotulo: 'Inverso (orçamento)' },
 ]
 
-const celula = (f: EstimativaFaixa) => `${formatarPct(f.p)} (± ${(f.margem95 * 100).toFixed(2).replace('.', ',')})`
-
 function Resumo({ linha, cotaBaseCent }: { linha: LinhaSimulacao; cotaBaseCent: number | null }) {
   const navigate = useNavigate()
+  const { casas, maisCasas } = useCasas()
+  const celula = (f: EstimativaFaixa) => <Chance p={f.p} casas={casas} margem={f.margem95} />
   const { estado, calcular, parar } = useProbabilidades()
   const r = estado.resultado
 
@@ -64,7 +66,7 @@ function Resumo({ linha, cotaBaseCent }: { linha: LinhaSimulacao; cotaBaseCent: 
         <p>Sobra do orçamento: <strong>{formatarReais(linha.sobraOrcamentoCent)}</strong></p>
         <p>Vai para a caixinha: <strong>{formatarReais(linha.caixinhaCent)}</strong></p>
         <p>Jogos: <strong>{formatarInteiro(linha.jogos)}</strong> · apostas equivalentes (gasto ÷ preço): <strong>{formatarInteiro(linha.apostasEquivalentes)}</strong></p>
-        <p>Chance de sena: <strong>1 em {formatarInteiro(linha.senaUmEm)}</strong> <span className="muted pequeno">(sem combinações repetidas)</span></p>
+        <p>Chance de sena: <ChanceExpansivel p={1 / linha.senaUmEm} /> <span className="muted pequeno">(sem combinações repetidas)</span></p>
       </div>
       {linha.avisoCentavos && (
         <p className="aviso">Atenção: o total não divide {linha.n} cotas em centavos exatos. Vale a regra de arredondamento (em Regras); a diferença vai para a caixinha.</p>
@@ -94,6 +96,9 @@ function Resumo({ linha, cotaBaseCent }: { linha: LinhaSimulacao; cotaBaseCent: 
 
       {r && (
         <div className="tabela-rolavel" style={{ marginTop: 10 }}>
+          <p>
+            <BotaoCasas casas={casas} aoClicar={maisCasas} />
+          </p>
           <table>
             <thead>
               <tr>
@@ -120,7 +125,7 @@ function Resumo({ linha, cotaBaseCent }: { linha: LinhaSimulacao; cotaBaseCent: 
               </tr>
             </tbody>
           </table>
-          <p className="muted pequeno">Valores aproximados (margem de erro de 95% entre parênteses, em pontos percentuais). A chance exata de sena é a de cima: 1 em {formatarInteiro(linha.senaUmEm)}.</p>
+          <p className="muted pequeno">Valores aproximados (margem de erro de 95% entre parênteses, em pontos percentuais). A chance exata de sena é a de cima: <ChanceExpansivel p={1 / linha.senaUmEm} />.</p>
         </div>
       )}
 

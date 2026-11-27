@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apagarRascunho, carregarBolao, carregarBoloesCongelados, congelarBolao, listarBoloes, type BolaoLinha, type ReciboDet } from '../../data/boloes'
 import { auditarBoloes, type RelatorioAuditoria } from '../../engine/auditoria'
+import { ChanceExpansivel } from '../Chance'
 import { formatarDataHoraSP, formatarInteiro, formatarReais } from '../formato'
 import { descreverRecibo } from '../plano'
 import { useRegras } from '../regras'
@@ -112,7 +113,7 @@ function RelatorioAud({ r }: { r: RelatorioAuditoria }) {
       </li>
       {r.senaUmEm !== null && (
         <li>
-          Chance de sena de todos os bolões juntos: 1 em <strong>{formatarInteiro(Math.round(r.senaUmEm))}</strong>
+          Chance de sena de todos os bolões juntos: <ChanceExpansivel p={1 / r.senaUmEm} />
         </li>
       )}
     </ul>

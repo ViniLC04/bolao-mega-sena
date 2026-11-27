@@ -57,6 +57,17 @@ export function formatarPct(p: number, casas = 2): string {
   return `${pct.toFixed(casas).replace('.', ',')}%`
 }
 
+/**
+ * Probabilidade (fração) → "1 em N": 0,0258 → "1 em 39"; 6,6e-6 → "1 em 152.170". Abaixo de 10 usa uma casa
+ * ("1 em 3,8"). Zero (ou inválido) → "—".
+ */
+export function formatarUmEm(p: number): string {
+  if (!(p > 0)) return '—'
+  const n = 1 / p
+  if (n < 10) return `1 em ${n.toFixed(1).replace('.', ',')}`
+  return `1 em ${formatarInteiro(Math.round(n))}`
+}
+
 /** "2026-12-31" → "31/12/2026" */
 export function formatarDataIso(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)

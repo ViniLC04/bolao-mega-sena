@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { carregarBoloesPublicos, carregarJogosPublicos, type BolaoPublico, type JogoPublico } from '../../data/publico'
 import { TOTAL_COMBINACOES } from '../../engine/combinatoria'
 import { combinacoesDistintas } from '../../engine/probabilidades'
+import { ChanceExpansivel } from '../Chance'
 import { contagemRegressiva, formatarDataHoraSP, formatarInteiro, formatarReais } from '../formato'
 import { useRegras } from '../regras'
 
@@ -109,7 +110,7 @@ function CartaoBolao({ b }: { b: BolaoPublico }) {
           {erro && <p className="erro">{erro}</p>}
           {distintas !== null && (
             <p>
-              Chance de sena do bolão inteiro: 1 em <strong>{formatarInteiro(Math.round(TOTAL_COMBINACOES / distintas))}</strong> ({formatarInteiro(distintas)} combinações de 6 dezenas distintas).
+              Chance de sena do bolão inteiro: <ChanceExpansivel p={distintas / TOTAL_COMBINACOES} /> ({formatarInteiro(distintas)} combinações de 6 dezenas distintas).
             </p>
           )}
           {recibos.map((ro) => {

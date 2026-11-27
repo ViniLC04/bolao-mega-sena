@@ -10,6 +10,7 @@ import {
   formatarPct,
   formatarReais,
   formatarReaisCampo,
+  formatarUmEm,
   hojeIsoSP,
   isoParaCampoLocalSP,
   parsePercentual,
@@ -68,6 +69,24 @@ describe('probabilidades na tela', () => {
     expect(formatarPct(0.0258, 1)).toBe('2,6%')
     expect(formatarPct(0)).toBe('0,00%')
     expect(formatarPct(0.0000001)).toBe('menos de 0,01%')
+  })
+  it('expande até 5 casas decimais', () => {
+    const p = 329 / 50_063_860 // sena do bolão do vetor
+    expect(formatarPct(p, 2)).toBe('menos de 0,01%')
+    expect(formatarPct(p, 3)).toBe('menos de 0,001%')
+    expect(formatarPct(p, 4)).toBe('0,0007%')
+    expect(formatarPct(p, 5)).toBe('0,00066%')
+    expect(formatarPct(0.0258, 5)).toBe('2,58000%')
+    expect(formatarPct(0.0000000001, 5)).toBe('menos de 0,00001%')
+  })
+  it('formato "1 em N"', () => {
+    expect(formatarUmEm(1 / 50_063_860)).toBe('1 em 50.063.860')
+    expect(formatarUmEm(329 / 50_063_860)).toBe('1 em 152.170')
+    expect(formatarUmEm(0.0258)).toBe('1 em 39')
+    expect(formatarUmEm(0.5)).toBe('1 em 2,0')
+    expect(formatarUmEm(0.27)).toBe('1 em 3,7')
+    expect(formatarUmEm(0)).toBe('—')
+    expect(formatarUmEm(Number.NaN)).toBe('—')
   })
 })
 
