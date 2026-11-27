@@ -8,6 +8,7 @@ import { ChancesBolao } from '../ChancesBolao'
 import { ConferenciaBolao } from '../Conferencia'
 import { contagemRegressiva, formatarDataHoraSP, formatarInteiro, formatarReais } from '../formato'
 import { useRegras } from '../regras'
+import { Simbolo } from '../simbolos'
 
 const dezenaTexto = (d: number) => String(d).padStart(2, '0')
 
@@ -37,8 +38,8 @@ export function Publico() {
   const c = contagemRegressiva(params.data_limite_aposta, agora)
 
   return (
-    <div className="conteudo">
-      <h1>Bolão da Mega da Virada</h1>
+    <div>
+      <h1>Bolões</h1>
       <section className="card">
         <h2>Prazo das apostas</h2>
         <p className="grande">{formatarDataHoraSP(params.data_limite_aposta)}</p>
@@ -54,13 +55,16 @@ export function Publico() {
       {boloes === null ? (
         <p className="muted">Carregando…</p>
       ) : boloes.length === 0 ? (
-        <p>Nenhum bolão publicado ainda. Volte em breve.</p>
+        <div className="vazio card">
+          <Simbolo nome="trevo" />
+          <p>Nenhum bolão publicado ainda. Volte em breve: os jogos aparecem aqui assim que forem congelados.</p>
+        </div>
       ) : (
         boloes.map((b) => <CartaoBolao key={b.id} b={b} />)
       )}
 
       <p className="muted pequeno" style={{ marginTop: 24 }}>
-        Nesta página não aparecem nomes de ninguém. <Link to="/estatisticas">Estatísticas</Link> · <Link to="/fontes">Fontes dos dados e atualizar concursos</Link> · <Link to="/entrar">Sou o organizador</Link>
+        Nesta página não aparecem nomes de ninguém. <Link to="/fontes">Fontes dos dados e atualizar concursos</Link>
       </p>
     </div>
   )

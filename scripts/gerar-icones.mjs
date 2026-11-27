@@ -17,17 +17,29 @@ function bloco(tipo, dados) {
   const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(corpo))
   return Buffer.concat([len, corpo, crc])
 }
+// Trevo de quatro folhas (quatro círculos) branco sobre verde, com um ponto dourado no centro.
+function corDoPonto(px, py, tam, escala) {
+  const verde = [37, 120, 74], branco = [255, 255, 255], ouro = [212, 168, 47]
+  const dx = px - tam / 2, dy = py - tam / 2
+  if (Math.hypot(dx, dy) < tam * 0.045 * escala) return ouro
+  const r = tam * 0.17 * escala, c = tam * 0.15 * escala
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) if (Math.hypot(dx - sx * c, dy - sy * c) < r) return branco
+  return verde
+}
+
 function png(tam, mascarar) {
-  const verde = [26, 127, 55], branco = [255, 255, 255]
+  const escala = mascarar ? 0.78 : 1
   const linhas = []
+  const S = 3 // 3x3 amostras por pixel, para as bordas ficarem suaves
   for (let y = 0; y < tam; y++) {
     const linha = Buffer.alloc(1 + tam * 3)
     for (let x = 0; x < tam; x++) {
-      const dx = x + 0.5 - tam / 2, dy = y + 0.5 - tam / 2
-      const d = Math.hypot(dx, dy)
-      const raio = tam * (mascarar ? 0.2 : 0.28)
-      const cor = d < raio ? branco : verde
-      linha[1 + x * 3] = cor[0]; linha[2 + x * 3] = cor[1]; linha[3 + x * 3] = cor[2]
+      let r = 0, g = 0, b = 0
+      for (let i = 0; i < S; i++) for (let j = 0; j < S; j++) {
+        const c = corDoPonto(x + (i + 0.5) / S, y + (j + 0.5) / S, tam, escala)
+        r += c[0]; g += c[1]; b += c[2]
+      }
+      linha[1 + x * 3] = Math.round(r / (S * S)); linha[2 + x * 3] = Math.round(g / (S * S)); linha[3 + x * 3] = Math.round(b / (S * S))
     }
     linhas.push(linha)
   }

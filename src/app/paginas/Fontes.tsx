@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { carregarRecentes, contarPorStatus, NOMES_STATUS, type ConcursoRecente } from '../../data/concursos'
 import { AtualizarConcursos } from '../AtualizarConcursos'
 import { formatarDataHoraSP, formatarDataIso, formatarInteiro } from '../formato'
@@ -34,10 +33,7 @@ export function Fontes() {
   const ultimo = recentes && recentes.length > 0 ? recentes[0] : null
 
   return (
-    <div className="conteudo">
-      <p>
-        <Link to="/publico">← Página do bolão</Link>
-      </p>
+    <div>
       <h1>Fontes dos dados</h1>
       {erro && <p className="erro">{erro}</p>}
 

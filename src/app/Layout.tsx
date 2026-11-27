@@ -1,9 +1,10 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { Link, NavLink, Outlet } from 'react-router-dom'
 import { emailParaUsuario } from '../data/usuario'
 import { useAuth } from './auth'
+import { Simbolo } from './simbolos'
 
 const ITENS = [
-  { to: '/', rotulo: 'Painel', fim: true },
+  { to: '/painel', rotulo: 'Painel' },
   { to: '/regras', rotulo: 'Regras' },
   { to: '/simulador', rotulo: 'Simulador' },
   { to: '/concursos', rotulo: 'Concursos' },
@@ -25,7 +26,10 @@ export function Layout() {
   return (
     <div className="app">
       <header className="topo">
-        <strong>Bolão da Mega da Virada</strong>
+        <Link to="/" className="marca">
+          <Simbolo nome="trevo" />
+          Bolão da Mega da Virada
+        </Link>
         <span className="topo-usuario">
           {usuario}
           <button type="button" className="secundario pequeno" onClick={() => void sair()}>
@@ -35,7 +39,7 @@ export function Layout() {
       </header>
       <nav className="menu" aria-label="Seções">
         {ITENS.map((i) => (
-          <NavLink key={i.to} to={i.to} end={i.fim} className={({ isActive }) => (isActive ? 'ativo' : undefined)}>
+          <NavLink key={i.to} to={i.to} className={({ isActive }) => (isActive ? 'ativo' : undefined)}>
             {i.rotulo}
           </NavLink>
         ))}

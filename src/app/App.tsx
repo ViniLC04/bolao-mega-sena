@@ -2,7 +2,9 @@ import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { configurado } from '../data/supabase'
 import { AuthProvider, useAuth } from './auth'
+import { CascaPublica } from './CascaPublica'
 import { Layout } from './Layout'
+import { Capa } from './paginas/Capa'
 import { Login } from './paginas/Login'
 import { Publico } from './paginas/Publico'
 import { RegrasProvider } from './regras'
@@ -27,13 +29,21 @@ const Participantes = carregar(() => import('./paginas/Participantes'), 'Partici
 const Regras = carregar(() => import('./paginas/Regras'), 'Regras')
 const Simulador = carregar(() => import('./paginas/Simulador'), 'Simulador')
 
-/** Só deixa passar quem está logado E é o ADM; os demais vão para o login. */
+/** Só deixa passar quem está logado E é o ADM; os demais vão para o login (se falta o código) ou para a capa. */
 function RotaAdm() {
   const { carregando, sessao, adm, pendenteCodigo } = useAuth()
   if (carregando) return <p className="carregando">Carregando…</p>
   if (sessao && !adm && pendenteCodigo) return <Navigate to="/entrar" replace />
-  if (!sessao || !adm) return <Navigate to="/publico" replace />
+  if (!sessao || !adm) return <Navigate to="/" replace />
   return <Layout />
+}
+
+/** Início: o organizador vai para o Painel; os demais veem a capa. */
+function Inicio() {
+  const { carregando, adm } = useAuth()
+  if (carregando) return <p className="carregando">Carregando…</p>
+  if (adm) return <Navigate to="/painel" replace />
+  return <Capa />
 }
 
 function SemConfiguracao() {
@@ -57,12 +67,15 @@ export function App() {
         <Suspense fallback={<p className="carregando">Carregando…</p>}>
           <Routes>
             <Route path="/entrar" element={<Login />} />
-            <Route path="/publico" element={<Publico />} />
-            <Route path="/fontes" element={<Fontes />} />
-            <Route path="/estatisticas" element={<Estatisticas />} />
-            <Route path="/p/:token" element={<MinhaParticipacao />} />
+            <Route element={<CascaPublica />}>
+              <Route index element={<Inicio />} />
+              <Route path="publico" element={<Publico />} />
+              <Route path="fontes" element={<Fontes />} />
+              <Route path="estatisticas" element={<Estatisticas />} />
+              <Route path="p/:token" element={<MinhaParticipacao />} />
+            </Route>
             <Route element={<RotaAdm />}>
-              <Route index element={<Painel />} />
+              <Route path="painel" element={<Painel />} />
               <Route path="regras" element={<Regras />} />
               <Route path="simulador" element={<Simulador />} />
               <Route path="concursos" element={<Concursos />} />

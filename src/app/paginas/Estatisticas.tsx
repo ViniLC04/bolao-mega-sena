@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import { carregarConcursos, type ConcursoResumo } from '../../data/concursos'
 import { carregarViradasPublicas } from '../../data/publico'
 import { distribuicaoConsecutivos, distribuicaoMaxPorLinha, distribuicaoPares, resumoSoma, totaisPorLinha } from '../../engine/estatisticas'
@@ -71,10 +70,7 @@ export function Estatisticas() {
   const pct = (v: number) => formatarPct(n > 0 ? v / n : 0, 1)
 
   return (
-    <div className="conteudo">
-      <p>
-        <Link to="/publico">← Página do bolão</Link>
-      </p>
+    <div>
       <h1>Estatísticas</h1>
       <p className="aviso">
         <strong>Estatísticas de sorteios passados não aumentam a probabilidade de acerto.</strong> Cada sorteio é independente e todo conjunto de 6 dezenas tem a mesma chance. Aqui só se descreve o que já aconteceu.

@@ -26,7 +26,7 @@ export function MinhaParticipacao() {
   }, [token])
 
   return (
-    <div className="conteudo">
+    <div>
       <h1>Minha participação no bolão</h1>
       {erro && <p className="erro">{erro}</p>}
       {linhas === null ? (

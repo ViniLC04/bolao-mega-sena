@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../auth'
 import { esperaAposFalhas } from '../bloqueio'
+import { Simbolo } from '../simbolos'
 
 const CHAVE_FALHAS = 'bolao.loginFalhas'
 
@@ -36,7 +37,7 @@ export function Login() {
     return () => clearInterval(t)
   }, [espera > 0]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!carregando && adm) return <Navigate to="/" replace />
+  if (!carregando && adm) return <Navigate to="/painel" replace />
 
   async function enviarOCodigo(e: FormEvent) {
     e.preventDefault()
@@ -101,8 +102,9 @@ export function Login() {
   return (
     <div className="login">
       <form className="card login-caixa" onSubmit={enviar}>
+        <span className="login-simbolo"><Simbolo nome="trevo" /></span>
         <h1>Bolão da Mega da Virada</h1>
-        <p className="muted">Área do organizador (ADM)</p>
+        <p className="muted" style={{ textAlign: 'center' }}>Área do organizador (ADM)</p>
         <label className="campo">
           <span>Usuário</span>
           <input value={usuario} onChange={(e) => setUsuario(e.target.value)} autoCapitalize="none" autoComplete="username" autoFocus required />
@@ -117,6 +119,7 @@ export function Login() {
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
         <p className="muted pequeno">Esqueceu a senha? Quem administra o projeto troca a senha no painel do Supabase (Authentication → Users).</p>
+        <p style={{ textAlign: 'center' }}><Link to="/">← Voltar ao início</Link></p>
       </form>
     </div>
   )
