@@ -49,6 +49,10 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 26 | "Bloqueio após tentativas erradas": hoje só o limite por IP do Supabase + espera crescente na tela (`src/app/bloqueio.ts`); quem chama a API direto não passa pela espera | **pendente para a Fase 5** (bloqueio de conta / proteção contra abuso do Supabase Auth) |
 | 27 | Chunk do app passa de 500 kB (Supabase + roteador + motor) | aceitável por ora; dividir em partes na Fase 5 se ficar lento no celular |
 | 28 | `recibos.cotas_n`: gravado como o total de cotas do bolão (todas as cotas dividem todos os recibos). Se na Fase 3 cada cota for ligada a um recibo específico, ajustar | premissa adotada na Fase 2 (etapa 7) |
+| 30 | Fase 3: valor devido por cota = `cotaCobradaCent` do plano gravado no bolão; pagamento é "pago ou não pago" por pessoa e bolão (sem parcial) | decidido pelo usuário em 26/11/2026 |
+| 31 | Fase 3: contagens públicas de pagos e vias entregues são agregadas; com poucos participantes dá para deduzir quem pagou (é o que o SPEC pede) | premissa adotada |
+| 32 | Link pessoal secreto por participante (SPEC 11) | **adiado**: fica para depois da Fase 3, se sobrar tempo |
+| 33 | Data limite no servidor só vale se as regras estiverem gravadas no banco (Regras → "Gravar as regras padrão no banco"); sem isso, só a tela bloqueia | aberto: gravar as regras no banco antes de abrir as cotas |
 | 29 | Cruzamento do gerador: só jogos de bolões **congelados** do mesmo concurso entram como exclusão (rascunhos não bloqueiam; o banco recusa repetição no congelamento) | premissa adotada na Fase 2 (etapa 7) |
 
 ## Premissas

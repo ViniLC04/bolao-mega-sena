@@ -9,6 +9,7 @@ import { Gerador } from './paginas/Gerador'
 import { Login } from './paginas/Login'
 import { Painel } from './paginas/Painel'
 import { Participantes } from './paginas/Participantes'
+import { Publico } from './paginas/Publico'
 import { Regras } from './paginas/Regras'
 import { Simulador } from './paginas/Simulador'
 import { RegrasProvider } from './regras'
@@ -17,7 +18,7 @@ import { RegrasProvider } from './regras'
 function RotaAdm() {
   const { carregando, sessao, adm } = useAuth()
   if (carregando) return <p className="carregando">Carregando…</p>
-  if (!sessao || !adm) return <Navigate to="/entrar" replace />
+  if (!sessao || !adm) return <Navigate to="/publico" replace />
   return <Layout />
 }
 
@@ -41,6 +42,7 @@ export function App() {
       <RegrasProvider>
         <Routes>
           <Route path="/entrar" element={<Login />} />
+          <Route path="/publico" element={<Publico />} />
           <Route element={<RotaAdm />}>
             <Route index element={<Painel />} />
             <Route path="regras" element={<Regras />} />
