@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { salvarRascunho } from '../../data/boloes'
 import { carregarConcursos, carregarViradas, type ConcursoResumo } from '../../data/concursos'
 import { carregarJogosOutrosBoloes, type JogosOutros } from '../../data/jogos'
-import { AVISO_RESTRICAO, type JogoGerado, type Relatorio, type ResultadoGeracao } from '../../engine/gerador'
+import { AVISO_RESTRICAO, type JogoGerado, type Premissas, type Relatorio, type ResultadoGeracao } from '../../engine/gerador'
 import { filtrarPeriodo, mascarasDe, sugestaoSoma } from '../../engine/historico'
 import { formatarInteiro, hojeIsoSP } from '../formato'
 import { descreverRecibo, type PlanoBolao } from '../plano'
@@ -60,12 +61,17 @@ interface Atual {
   jogos: JogoGerado[]
   relatorio: Relatorio
   semente: number
+  premissas: Premissas
 }
 
 export function Gerador() {
   const location = useLocation()
-  const { params } = useRegras()
+  const navigate = useNavigate()
+  const { params, vigenciaEmUso } = useRegras()
   const concursoAlvo = params.concurso_virada.numero
+  const [nome, setNome] = useState(() => `Bolão da Virada ${params.concurso_virada.numero}`)
+  const [salvando, setSalvando] = useState(false)
+  const [erroSalvar, setErroSalvar] = useState<string | null>(null)
 
   const [plano] = useState<PlanoBolao | null>(() => {
     const doEstado = (location.state as { plano?: PlanoBolao } | null)?.plano
@@ -149,7 +155,7 @@ export function Gerador() {
     if (comNovaSemente) setSemente(String(sem))
     setFalha(null)
     executar({ tipo: 'gerar', recibos: plano.recibos, premissas: m.premissas, contexto: m.contexto, semente: sem, fixos: jogosTravados }, (r) => {
-      if (r.ok && r.relatorio) setAtual({ jogos: r.jogos, relatorio: r.relatorio, semente: r.semente })
+      if (r.ok && r.relatorio) setAtual({ jogos: r.jogos, relatorio: r.relatorio, semente: r.semente, premissas: m.premissas })
       else setFalha(r)
     })
   }
@@ -160,13 +166,36 @@ export function Gerador() {
     if (!m) return
     setFalha(null)
     executar({ tipo: 'regerar', recibos: plano.recibos, premissas: m.premissas, contexto: m.contexto, semente: novaSemente(), jogosAtuais: atual.jogos, indice }, (r) => {
-      if (r.ok && r.relatorio) setAtual({ jogos: r.jogos, relatorio: r.relatorio, semente: atual.semente })
+      if (r.ok && r.relatorio) setAtual({ jogos: r.jogos, relatorio: r.relatorio, semente: atual.semente, premissas: m.premissas })
       else setFalha(r)
     })
   }
 
   function alternarTrava(indice: number) {
     setAtual((a) => (a ? { ...a, jogos: a.jogos.map((j, i) => (i === indice ? { ...j, travado: !j.travado } : j)) } : a))
+  }
+
+  async function salvar() {
+    if (!plano || !atual) return
+    if (nome.trim().length < 2) {
+      setErroSalvar('Dê um nome ao bolão.')
+      return
+    }
+    setSalvando(true)
+    setErroSalvar(null)
+    const r = await salvarRascunho({
+      concurso: concursoAlvo,
+      nome: nome.trim(),
+      plano,
+      jogos: atual.jogos,
+      semente: atual.semente,
+      params,
+      vigencia: vigenciaEmUso,
+      premissas: atual.premissas,
+    })
+    setSalvando(false)
+    if (r.erro || !r.id) setErroSalvar(r.erro ?? 'Não consegui salvar.')
+    else navigate(`/boloes/${r.id}`)
   }
 
   function sugerirSoma() {
@@ -393,6 +422,20 @@ export function Gerador() {
       )}
 
       {atual && <Resultado plano={plano} atual={atual} ocupado={ocupado} aoTrocar={trocar} aoTravar={alternarTrava} />}
+      {atual && (
+        <section className="card" style={{ marginTop: 12 }}>
+          <h2>Salvar o bolão</h2>
+          <p className="muted pequeno">Salva como <strong>rascunho</strong>: ainda dá para apagar. Para valer, depois você congela na tela Bolões.</p>
+          <label className="campo">
+            <span>Nome do bolão</span>
+            <input value={nome} onChange={(e) => setNome(e.target.value)} />
+          </label>
+          <button type="button" className="primario" disabled={ocupado || salvando} onClick={() => void salvar()}>
+            {salvando ? 'Salvando…' : 'Salvar como rascunho'}
+          </button>
+          {erroSalvar && <p className="erro">{erroSalvar}</p>}
+        </section>
+      )}
     </>
   )
 }
@@ -454,7 +497,6 @@ function Resultado({ plano, atual, ocupado, aoTrocar, aoTravar }: { plano: Plano
           </ul>
         </section>
       ))}
-      <p className="muted pequeno">Salvar e congelar o bolão: próxima etapa.</p>
     </>
   )
 }

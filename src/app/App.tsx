@@ -2,9 +2,9 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { configurado } from '../data/supabase'
 import { AuthProvider, useAuth } from './auth'
 import { Layout } from './Layout'
+import { BolaoDetalhe, Boloes } from './paginas/Boloes'
 import { Conta } from './paginas/Conta'
 import { Concursos } from './paginas/Concursos'
-import { EmConstrucao } from './paginas/EmConstrucao'
 import { Gerador } from './paginas/Gerador'
 import { Login } from './paginas/Login'
 import { Painel } from './paginas/Painel'
@@ -46,7 +46,8 @@ export function App() {
             <Route path="simulador" element={<Simulador />} />
             <Route path="concursos" element={<Concursos />} />
             <Route path="gerador" element={<Gerador />} />
-            <Route path="boloes" element={<EmConstrucao titulo="Bolões" etapa="Etapa 7" />} />
+            <Route path="boloes" element={<Boloes />} />
+            <Route path="boloes/:id" element={<BolaoDetalhe />} />
             <Route path="conta" element={<Conta />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

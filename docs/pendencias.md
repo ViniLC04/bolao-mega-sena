@@ -48,6 +48,8 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 25 | Login por usuário = e-mail interno fixo `usuario@example.com`; recuperação de senha pelo painel do Supabase, não por e-mail | decidido pelo usuário em 26/11/2026 |
 | 26 | "Bloqueio após tentativas erradas": hoje só o limite por IP do Supabase + espera crescente na tela (`src/app/bloqueio.ts`); quem chama a API direto não passa pela espera | **pendente para a Fase 5** (bloqueio de conta / proteção contra abuso do Supabase Auth) |
 | 27 | Chunk do app passa de 500 kB (Supabase + roteador + motor) | aceitável por ora; dividir em partes na Fase 5 se ficar lento no celular |
+| 28 | `recibos.cotas_n`: gravado como o total de cotas do bolão (todas as cotas dividem todos os recibos). Se na Fase 3 cada cota for ligada a um recibo específico, ajustar | premissa adotada na Fase 2 (etapa 7) |
+| 29 | Cruzamento do gerador: só jogos de bolões **congelados** do mesmo concurso entram como exclusão (rascunhos não bloqueiam; o banco recusa repetição no congelamento) | premissa adotada na Fase 2 (etapa 7) |
 
 ## Premissas
 - Uso oficial da Caixa com 1 recibo por cota; sem tarifa de 35%.
