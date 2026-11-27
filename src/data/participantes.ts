@@ -5,6 +5,31 @@ export interface Participante {
   id: string
   nome: string
   contato: string | null
+  /** segredo do link pessoal (64 hexadecimais); só o ADM lê */
+  link_token: string | null
+  link_ativo: boolean
+}
+
+/** 32 bytes aleatórios do navegador em hexadecimal (64 caracteres). */
+export function gerarTokenDoLink(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/** Endereço completo do link pessoal. */
+export function enderecoDoLink(token: string): string {
+  return `${window.location.origin}/#/p/${token}`
+}
+
+/** Liga o link pessoal (cria o segredo se ainda não existe; `renovar` troca por outro e o antigo para de funcionar). */
+export async function ligarLink(p: Participante, renovar = false): Promise<{ token: string | null; erro: string | null }> {
+  const token = !renovar && p.link_token ? p.link_token : gerarTokenDoLink()
+  const { error } = await supabase.from('participantes').update({ link_token: token, link_ativo: true }).eq('id', p.id)
+  return error ? { token: null, erro: 'Não consegui ligar o link agora.' } : { token, erro: null }
+}
+
+export async function desligarLink(id: string): Promise<string | null> {
+  const { error } = await supabase.from('participantes').update({ link_ativo: false }).eq('id', id)
+  return error ? 'Não consegui desligar o link agora.' : null
 }
 
 export interface CotaLinha {
@@ -35,13 +60,13 @@ function traduzir(codigo: string | undefined, texto: string, padrao: string): st
 }
 
 export async function listarParticipantes(): Promise<{ lista: Participante[]; erro: string | null }> {
-  const { data, error } = await supabase.from('participantes').select('id, nome, contato').order('nome')
+  const { data, error } = await supabase.from('participantes').select('id, nome, contato, link_token, link_ativo').order('nome')
   if (error) return { lista: [], erro: 'Não consegui ler os participantes.' }
   return { lista: (data ?? []) as Participante[], erro: null }
 }
 
 export async function criarParticipante(nome: string, contato: string): Promise<{ participante: Participante | null; erro: string | null }> {
-  const { data, error } = await supabase.from('participantes').insert({ nome: nome.trim(), contato: contato.trim() || null }).select('id, nome, contato').single()
+  const { data, error } = await supabase.from('participantes').insert({ nome: nome.trim(), contato: contato.trim() || null }).select('id, nome, contato, link_token, link_ativo').single()
   if (error || !data) return { participante: null, erro: traduzir(error?.code, error?.message ?? '', 'Não consegui salvar o participante.') }
   return { participante: data as Participante, erro: null }
 }

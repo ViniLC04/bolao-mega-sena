@@ -1,0 +1,127 @@
+# Manual do organizador
+
+Este manual explica, passo a passo, tudo o que você faz no app. Você não precisa saber programar. O app só funciona direito se você seguir a ordem da seção "O caminho completo".
+
+## O caminho completo (resumo)
+
+1. Entre no app e ative a verificação em 2 passos.
+2. Grave as regras no banco (uma vez).
+3. Atualize a lista de concursos.
+4. Simule o bolão (quantas cotas, quanto gastar).
+5. Gere os jogos.
+6. Salve como rascunho, confira e congele.
+7. Faça as apostas na Caixa com exatamente esses jogos e anexe a foto de cada recibo.
+8. Cadastre os participantes, as cotas e os pagamentos.
+9. Mande o link pessoal para cada participante.
+10. Depois do sorteio, atualize os concursos e confira o resultado.
+11. Faça o backup.
+
+## 1. Entrar
+
+1. Abra o endereço do app no navegador (computador ou celular).
+2. Se estiver na página pública, clique em "Sou o organizador" no rodapé.
+3. Digite o seu usuário (sem o @example.com) e a senha.
+4. Se a verificação em 2 passos estiver ativa, abra o aplicativo autenticador no celular e digite o código de 6 números.
+
+## 2. Ativar a verificação em 2 passos (faça já)
+
+1. No menu, abra **Conta**.
+2. No quadro "Verificação em 2 passos", clique em **Ativar**.
+3. No celular, instale o Google Authenticator ou o Microsoft Authenticator.
+4. No aplicativo, escolha adicionar conta e aponte a câmera para o quadrado que aparece na tela.
+5. Digite o código de 6 números que o aplicativo mostrar e clique em **Confirmar e ativar**.
+6. Daqui em diante o app pede o código toda vez que você entrar.
+
+**Se você perder o celular:** abra o painel do Supabase, vá em Authentication, depois Users, clique no seu usuário e remova o fator. Entre só com a senha e ative de novo no celular novo.
+
+## 3. Gravar as regras no banco (uma vez)
+
+1. No menu, abra **Regras**.
+2. Se aparecer o aviso amarelo "Ainda não há regras gravadas no banco", clique em **Gravar as regras padrão no banco**.
+3. Confira a **data limite das apostas** (31/12/2026 às 22h). Se a Caixa mudar o horário, crie uma nova versão com a data nova.
+
+## 4. Concursos
+
+1. No menu, abra **Concursos**.
+2. Clique em **Atualizar pela Caixa**. O app busca os concursos novos. Como você é o organizador, se a segunda fonte confere, eles já entram "Confirmados".
+3. Concursos que um visitante atualizou aparecem como "Aguardando confirmação". Confira as dezenas com o resultado oficial e clique em **Confirmar** (ou em **Rejeitar**, só para o último, se estiver errado).
+4. Em "Concursos da Mega da Virada", clique em **Sugerir: sorteios de 31/12**, confira a lista e clique em **Gravar lista**.
+
+## 5. Simulador
+
+1. No menu, abra **Simulador**.
+2. Escolha como pensar: **Por valor** (quanto cada cota custa), **Por nº de cotas** ou **Inverso** (orçamento total).
+3. Digite os números e veja os recibos, o valor de cada cota, a sobra para a caixinha e as chances.
+4. Clique em **Usar este plano no gerador de jogos**.
+
+## 6. Gerador de jogos
+
+1. Na tela **Gerador**, deixe as premissas como estão (o padrão evita repetir combinações) ou marque as que quiser.
+2. Clique em **Gerar jogos**.
+3. Confira o relatório: "Repetidas" precisa ser 0.
+4. Você pode **travar** um jogo de que gostou e clicar em **Gerar de novo**, ou **Trocar este jogo**.
+5. A **semente** é o número que permite repetir exatamente a mesma geração. Guarde-a se quiser comprovar depois.
+
+## 7. Salvar e congelar o bolão
+
+1. Em **Salvar o bolão**, dê um nome e clique em **Salvar como rascunho**.
+2. O rascunho pode ser apagado quando quiser (botão **Apagar rascunho**).
+3. Quando os jogos estiverem aprovados, marque "Conferi os jogos e quero congelar" e clique em **Congelar bolão**.
+4. **Congelar não tem volta.** Depois disso, os jogos não mudam nem são apagados, e as combinações ficam reservadas no concurso.
+
+## 8. Apostar na Caixa e anexar a foto do recibo
+
+1. Faça as apostas na lotérica ou no app da Caixa com exatamente os jogos congelados.
+2. Tire uma foto nítida de cada recibo.
+3. Na tela do bolão, em cada recibo, clique em **Anexar foto** e escolha a foto. Só você vê essas fotos.
+
+## 9. Participantes, cotas e pagamentos
+
+1. No menu, abra **Participantes** e inclua cada pessoa (nome e, se quiser, um contato).
+2. Na tela do bolão, em **Cotas e pagamentos**, escolha o participante e a quantidade de cotas, e clique em **Incluir cotas**.
+3. Quando a pessoa pagar, marque **Pago**. Quando entregar a via do recibo, marque **Via entregue**.
+4. O app não deixa vender mais cotas do que o bolão tem, nem depois da data limite.
+
+## 10. Link pessoal de cada participante
+
+1. Em **Participantes**, na linha da pessoa, clique em **Gerar link**. O link é copiado.
+2. Cole no WhatsApp e mande só para aquela pessoa.
+3. Ela vê apenas as cotas, o valor e o bolão em que participa. Não vê ninguém mais.
+4. **Novo** troca o link por outro (o antigo para de funcionar). **Desligar** apaga o acesso.
+
+## 11. Caixinha
+
+Em **Caixinha**, dentro do bolão, o app mostra a sobra do arredondamento da cota. Lance entradas e saídas à parte com o motivo.
+
+## 12. Depois do sorteio
+
+1. Em **Concursos**, clique em **Atualizar pela Caixa** até o concurso da Virada aparecer.
+2. Confirme o concurso, se estiver "Aguardando confirmação".
+3. Abra o bolão e veja a **Conferência**: acertos de cada jogo, prêmio bruto, imposto, valor líquido por cota e o valor de cada participante.
+4. Os valores usam sempre o **rateio oficial da Caixa**. Se o rateio ainda não saiu, o app avisa e não inventa valor.
+5. Para ensaiar antes, digite outro concurso já sorteado (por exemplo 2955): aparece "SIMULAÇÃO".
+
+## 13. Backup
+
+1. No menu, abra **Backup** e clique em **Baixar backup (.json)**.
+2. Guarde o arquivo numa pasta **privada** (ele tem nomes). Nunca no GitHub nem em grupo.
+3. Faça backup depois de congelar, depois de registrar pagamentos e na véspera de 31/12.
+
+## 14. Auditoria
+
+Em **Auditoria** você vê quem criou, alterou ou apagou o quê, e quando. Serve para tirar dúvidas e conferir.
+
+## 15. Problemas comuns
+
+- **A Caixa não responde ao atualizar:** tente de novo mais tarde. O app não grava nada pela metade.
+- **"Cotas demais":** o bolão já vendeu todas as cotas.
+- **"A data limite já passou":** crie uma nova versão das regras com outra data limite.
+- **Esqueci a senha:** painel do Supabase, Authentication, Users, e troque a senha do seu usuário.
+- **O projeto parou (Supabase gratuito):** abra o painel do Supabase e reative o projeto. Abra o app ao menos uma vez por semana para ele não pausar.
+- **Dúvida sobre segurança:** veja `docs/seguranca.md`.
+
+## Lembretes importantes
+
+- O prazo das apostas é 31/12/2026 às 22h (horário de Brasília). Confira o horário final no app da Caixa.
+- **Estatísticas de sorteios passados não aumentam a chance de acerto.** Todo conjunto de 6 dezenas tem a mesma probabilidade.
+- O valor do prêmio vem sempre do rateio oficial da Caixa. Qualquer estimativa é rotulada como tal.

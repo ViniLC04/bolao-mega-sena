@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react'
-import { apagarParticipante, atualizarParticipante, criarParticipante, listarParticipantes, type Participante } from '../../data/participantes'
+import {
+  apagarParticipante,
+  atualizarParticipante,
+  criarParticipante,
+  desligarLink,
+  enderecoDoLink,
+  ligarLink,
+  listarParticipantes,
+  type Participante,
+} from '../../data/participantes'
 
 export function Participantes() {
   const [lista, setLista] = useState<Participante[] | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [nome, setNome] = useState('')
   const [contato, setContato] = useState('')
@@ -62,6 +72,33 @@ export function Participantes() {
     }
   }
 
+  async function copiar(url: string, nomePessoa: string) {
+    try {
+      await navigator.clipboard.writeText(url)
+      setAviso(`Link de ${nomePessoa} copiado. Cole no WhatsApp para enviar só para essa pessoa.`)
+    } catch {
+      setAviso(`Não consegui copiar sozinho. Copie à mão: ${url}`)
+    }
+  }
+
+  async function ligar(p: Participante, renovar = false) {
+    if (renovar && !window.confirm(`Gerar um link novo para ${p.nome}? O link antigo deixa de funcionar.`)) return
+    setErro(null)
+    setAviso(null)
+    const r = await ligarLink(p, renovar)
+    if (r.erro || !r.token) return setErro(r.erro)
+    await recarregar()
+    await copiar(enderecoDoLink(r.token), p.nome)
+  }
+
+  async function desligar(p: Participante) {
+    setErro(null)
+    setAviso(null)
+    const e = await desligarLink(p.id)
+    if (e) setErro(e)
+    else await recarregar()
+  }
+
   async function apagar(p: Participante) {
     if (!window.confirm(`Apagar ${p.nome}? Não dá para desfazer.`)) return
     setErro(null)
@@ -77,6 +114,7 @@ export function Participantes() {
         Só você vê os nomes e contatos. O apostador, no link público, vê apenas totais. As cotas de cada pessoa são lançadas dentro de cada bolão (tela Bolões).
       </p>
       {erro && <p className="erro">{erro}</p>}
+      {aviso && <p className="ok" style={{ wordBreak: 'break-all' }}>{aviso}</p>}
 
       <section className="card">
         <h2>Novo participante</h2>
@@ -107,6 +145,7 @@ export function Participantes() {
               <tr>
                 <th>Nome</th>
                 <th>Contato</th>
+                <th>Link pessoal</th>
                 <th />
               </tr>
             </thead>
@@ -120,6 +159,8 @@ export function Participantes() {
                     <td>
                       <input value={edContato} onChange={(e) => setEdContato(e.target.value)} maxLength={200} />
                     </td>
+                    <td />
+
                     <td style={{ whiteSpace: 'nowrap' }}>
                       <button type="button" className="primario pequeno" disabled={ocupado} onClick={() => void salvarEdicao(p.id)}>
                         Salvar
@@ -133,6 +174,26 @@ export function Participantes() {
                   <tr key={p.id}>
                     <td>{p.nome}</td>
                     <td>{p.contato ?? '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {p.link_ativo && p.link_token ? (
+                        <>
+                          <span className="ok pequeno">ligado</span>{' '}
+                          <button type="button" className="secundario pequeno" onClick={() => void copiar(enderecoDoLink(p.link_token!), p.nome)}>
+                            Copiar
+                          </button>{' '}
+                          <button type="button" className="secundario pequeno" onClick={() => void ligar(p, true)}>
+                            Novo
+                          </button>{' '}
+                          <button type="button" className="secundario pequeno" onClick={() => void desligar(p)}>
+                            Desligar
+                          </button>
+                        </>
+                      ) : (
+                        <button type="button" className="secundario pequeno" onClick={() => void ligar(p)}>
+                          Gerar link
+                        </button>
+                      )}
+                    </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       <button
                         type="button"

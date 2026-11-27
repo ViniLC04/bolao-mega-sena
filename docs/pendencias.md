@@ -46,12 +46,15 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | # | Item | Status |
 |---|---|---|
 | 25 | Login por usuário = e-mail interno fixo `usuario@example.com`; recuperação de senha pelo painel do Supabase, não por e-mail | decidido pelo usuário em 26/11/2026 |
-| 26 | "Bloqueio após tentativas erradas": hoje só o limite por IP do Supabase + espera crescente na tela (`src/app/bloqueio.ts`); quem chama a API direto não passa pela espera | **pendente para a Fase 5** (bloqueio de conta / proteção contra abuso do Supabase Auth) |
-| 27 | Chunk do app passa de 500 kB (Supabase + roteador + motor) | aceitável por ora; dividir em partes na Fase 5 se ficar lento no celular |
+| 26 | "Bloqueio após tentativas erradas": limite por IP do Supabase + espera crescente na tela (`src/app/bloqueio.ts`) | **resolvido na Fase 5** com verificação em 2 passos (TOTP) exigida pelo banco; limites de tentativas no painel do Supabase em `docs/seguranca.md` |
+| 27 | Chunk do app passa de 500 kB (Supabase + roteador + motor) | **parcial na Fase 5**: telas do ADM e planilha carregam só quando abertas (React.lazy); o pacote principal continua ~518 kB (150 kB comprimido): aceitável |
 | 28 | `recibos.cotas_n`: gravado como o total de cotas do bolão (todas as cotas dividem todos os recibos). Se na Fase 3 cada cota for ligada a um recibo específico, ajustar | premissa adotada na Fase 2 (etapa 7) |
 | 30 | Fase 3: valor devido por cota = `cotaCobradaCent` do plano gravado no bolão; pagamento é "pago ou não pago" por pessoa e bolão (sem parcial) | decidido pelo usuário em 26/11/2026 |
 | 31 | Fase 3: contagens públicas de pagos e vias entregues são agregadas; com poucos participantes dá para deduzir quem pagou (é o que o SPEC pede) | premissa adotada |
-| 32 | Link pessoal secreto por participante (SPEC 11) | **adiado**: fica para depois da Fase 3, se sobrar tempo |
+| 32 | Link pessoal secreto por participante (SPEC 11) | **feito na Fase 5** (só o(s) bolão(ões) da própria pessoa) |
+| 39 | Fase 5: recuperar o celular do 2 passos exige remover o fator no painel do Supabase (não há códigos de reserva) | documentado em `docs/seguranca.md` |
+| 40 | Fase 5: restauração de backup é feita junto com o assistente (`docs/restaurar.md`), ainda não testada com banco vazio | aberto |
+| 41 | Fase 5: projetos de teste da Fase 0 na Cloudflare (`bolao-spike-caixa`, worker de teste) ainda existem | aberto: apagar só com o ok do usuário |
 | 33 | Data limite no servidor só vale se as regras estiverem gravadas no banco (Regras → "Gravar as regras padrão no banco"); sem isso, só a tela bloqueia | aberto: gravar as regras no banco antes de abrir as cotas |
 | 34 | Fase 4: concurso enviado por visitante entra "aguardando confirmação"; só o ADM confirma (ou grava direto "confirmado" se as 2 fontes batem). Se alguém enviar resultado falso, o ADM usa "Rejeitar" (só o último concurso, só aguardando) | decidido pelo usuário em 26/11/2026 |
 | 35 | Fase 4: limite do servidor = 5 concursos novos por minuto e 20 tentativas recusadas por minuto (o SPEC diz "1 atualização por minuto", mas uma atualização pode trazer vários concursos) | premissa adotada |

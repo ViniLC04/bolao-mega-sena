@@ -25,6 +25,37 @@ export interface JogoPublico {
   dezenas: number[]
 }
 
+/** Uma linha por bolão em que a pessoa dona do link participa. */
+export interface MinhaParticipacaoLinha {
+  participante: string
+  bolao_id: string
+  bolao_nome: string
+  concurso_alvo: number
+  n_cotas: number
+  status: 'rascunho' | 'congelado'
+  congelado_em: string | null
+  hash: string | null
+  qtd: number
+  valor_devido_cent: number
+  pago: boolean
+  via_entregue: boolean
+  custo_cent: number
+  cota_cent: number | null
+}
+
+/** Link pessoal: só os bolões da própria pessoa. Link errado ou desligado = lista vazia. */
+export async function carregarMinhaParticipacao(token: string): Promise<{ linhas: MinhaParticipacaoLinha[]; erro: string | null }> {
+  const { data, error } = await supabase.rpc('publico_participante', { p_token: token })
+  if (error) return { linhas: [], erro: 'Não consegui carregar agora. Tente de novo.' }
+  return { linhas: (data ?? []) as MinhaParticipacaoLinha[], erro: null }
+}
+
+export async function carregarMeusJogos(token: string, bolaoId: string): Promise<{ jogos: JogoPublico[]; erro: string | null }> {
+  const { data, error } = await supabase.rpc('publico_participante_jogos', { p_token: token, p_bolao: bolaoId })
+  if (error) return { jogos: [], erro: 'Não consegui carregar os jogos agora.' }
+  return { jogos: (data ?? []) as JogoPublico[], erro: null }
+}
+
 /** Números dos concursos-Virada (lista editada pelo ADM; pública porque só tem números de concurso). */
 export async function carregarViradasPublicas(): Promise<number[]> {
   const { data, error } = await supabase.rpc('publico_viradas')

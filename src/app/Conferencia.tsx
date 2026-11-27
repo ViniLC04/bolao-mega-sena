@@ -28,11 +28,14 @@ export function ConferenciaBolao({
   nCotas,
   concursoAlvo,
   participantes,
+  minhaQtd,
 }: {
   jogos: JogoParaConferir[]
   nCotas: number
   concursoAlvo: number
   participantes?: ParticipanteConferencia[]
+  /** no link pessoal: quantas cotas a pessoa tem, para mostrar "sua parte" */
+  minhaQtd?: number
 }) {
   const { params } = useRegras()
   const [numero, setNumero] = useState(String(concursoAlvo))
@@ -152,6 +155,11 @@ export function ConferenciaBolao({
                 <li>
                   Valor líquido por cota (N = {nCotas}): <strong>{formatarReais(conferido.porCotaCent)}</strong> <span className="muted pequeno">(arredondado para baixo; sobra {formatarReais(conferido.restoCaixinhaCent)} para a caixinha)</span>
                 </li>
+                {minhaQtd !== undefined && (
+                  <li>
+                    <strong>Sua parte</strong> ({minhaQtd} cota{minhaQtd === 1 ? '' : 's'}): <strong>{formatarReais(valorDoParticipante(minhaQtd, conferido))}</strong> líquido
+                  </li>
+                )}
               </ul>
 
               <h2 style={{ fontSize: '1rem' }}>Por recibo</h2>

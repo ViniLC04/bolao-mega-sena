@@ -11,6 +11,9 @@ import { RegrasProvider } from './regras'
 const carregar = <T extends Record<string, React.ComponentType>>(importar: () => Promise<T>, nome: keyof T & string) =>
   lazy(() => importar().then((m) => ({ default: m[nome] })))
 
+const Ajuda = carregar(() => import('./paginas/Ajuda'), 'Ajuda')
+const Auditoria = carregar(() => import('./paginas/Auditoria'), 'Auditoria')
+const Backup = carregar(() => import('./paginas/Backup'), 'Backup')
 const Boloes = carregar(() => import('./paginas/Boloes'), 'Boloes')
 const BolaoDetalhe = carregar(() => import('./paginas/Boloes'), 'BolaoDetalhe')
 const Conta = carregar(() => import('./paginas/Conta'), 'Conta')
@@ -18,6 +21,7 @@ const Concursos = carregar(() => import('./paginas/Concursos'), 'Concursos')
 const Estatisticas = carregar(() => import('./paginas/Estatisticas'), 'Estatisticas')
 const Fontes = carregar(() => import('./paginas/Fontes'), 'Fontes')
 const Gerador = carregar(() => import('./paginas/Gerador'), 'Gerador')
+const MinhaParticipacao = carregar(() => import('./paginas/MinhaParticipacao'), 'MinhaParticipacao')
 const Painel = carregar(() => import('./paginas/Painel'), 'Painel')
 const Participantes = carregar(() => import('./paginas/Participantes'), 'Participantes')
 const Regras = carregar(() => import('./paginas/Regras'), 'Regras')
@@ -56,6 +60,7 @@ export function App() {
             <Route path="/publico" element={<Publico />} />
             <Route path="/fontes" element={<Fontes />} />
             <Route path="/estatisticas" element={<Estatisticas />} />
+            <Route path="/p/:token" element={<MinhaParticipacao />} />
             <Route element={<RotaAdm />}>
               <Route index element={<Painel />} />
               <Route path="regras" element={<Regras />} />
@@ -65,6 +70,9 @@ export function App() {
               <Route path="boloes" element={<Boloes />} />
               <Route path="boloes/:id" element={<BolaoDetalhe />} />
               <Route path="participantes" element={<Participantes />} />
+              <Route path="ajuda" element={<Ajuda />} />
+              <Route path="auditoria" element={<Auditoria />} />
+              <Route path="backup" element={<Backup />} />
               <Route path="conta" element={<Conta />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
