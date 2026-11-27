@@ -5,6 +5,7 @@ import { hashJogos } from '../engine/hash'
 import { paraCadaRank } from '../engine/probabilidades'
 import type { ParamsRegras } from '../engine/rules'
 import type { PlanoBolao } from '../app/plano'
+import { gerarTokenDoLink } from './participantes'
 import { supabase } from './supabase'
 
 export interface BolaoLinha {
@@ -145,6 +146,34 @@ export async function congelarBolao(id: string): Promise<{ ok: boolean; erro: st
   const { data, error } = await supabase.rpc('congelar_bolao', { p_bolao: id, p_hash: hash, p_ranks: ranks })
   if (error) return { ok: false, erro: mensagemCongelar(error.code, error.message) }
   return { ok: true, erro: null, combinacoes: (data as { combinacoes: number }).combinacoes, hash }
+}
+
+// ---------- Link público do bolão (primeiros nomes e cotas; o segredo fica em bolao_links) ----------
+export interface LinkDoBolao {
+  token: string
+  ativo: boolean
+}
+
+export function enderecoDoLinkDoBolao(token: string): string {
+  return `${window.location.origin}/#/b/${token}`
+}
+
+export async function carregarLinkDoBolao(bolaoId: string): Promise<{ link: LinkDoBolao | null; erro: string | null }> {
+  const { data, error } = await supabase.from('bolao_links').select('token, ativo').eq('bolao_id', bolaoId).maybeSingle()
+  if (error) return { link: null, erro: 'Não consegui ler o link do bolão.' }
+  return { link: (data as LinkDoBolao | null) ?? null, erro: null }
+}
+
+/** Liga o link (cria o segredo se ainda não há). `renovar` troca por outro: o antigo para de funcionar. */
+export async function ligarLinkDoBolao(bolaoId: string, atual: LinkDoBolao | null, renovar: boolean): Promise<{ link: LinkDoBolao | null; erro: string | null }> {
+  const token = !renovar && atual ? atual.token : gerarTokenDoLink()
+  const { error } = await supabase.from('bolao_links').upsert({ bolao_id: bolaoId, token, ativo: true, atualizado_em: new Date().toISOString() })
+  return error ? { link: null, erro: 'Não consegui ligar o link agora.' } : { link: { token, ativo: true }, erro: null }
+}
+
+export async function desligarLinkDoBolao(bolaoId: string): Promise<string | null> {
+  const { error } = await supabase.from('bolao_links').update({ ativo: false, atualizado_em: new Date().toISOString() }).eq('bolao_id', bolaoId)
+  return error ? 'Não consegui desligar o link agora.' : null
 }
 
 export interface BolaoCongelado {

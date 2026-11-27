@@ -61,6 +61,8 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 | 36 | Fase 4: 2ª fonte (resultadomega) confere data e dezenas de qualquer concurso (concursos.json) e o rateio só do último (ultimo.json); fonte não oficial e de um projeto novo | aberto: avaliar outra fonte de reserva |
 | 37 | Fase 4: não é possível corrigir um concurso já gravado (nunca sobrescreve); só rejeitar o último aguardando | aberto: definir como corrigir erro de dado de concurso confirmado (hoje, só pelo SQL Editor) |
 | 38 | Fase 4: conferência com qualquer concurso (simulação) é pública | decidido pelo usuário em 26/11/2026 |
+| 42 | Fase 6: **mudança de regra de privacidade** pedida pelo organizador: o link secreto do bolão mostra primeiro nome + cotas (sem sobrenome, contato nem situação de pagamento). Quem tem o link pode repassá-lo; o ADM desliga ou renova | decidido pelo usuário em 27/11/2026 |
+| 43 | Fase 6: o símbolo de Muruga é um desenho original (lança vel, pavão e lótus); a imagem de terceiros indicada não foi copiada | feito; o organizador pode pedir ajuste |
 | 29 | Cruzamento do gerador: só jogos de bolões **congelados** do mesmo concurso entram como exclusão (rascunhos não bloqueiam; o banco recusa repetição no congelamento) | premissa adotada na Fase 2 (etapa 7) |
 
 ## Premissas

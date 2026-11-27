@@ -16,6 +16,7 @@ const carregar = <T extends Record<string, React.ComponentType>>(importar: () =>
 const Ajuda = carregar(() => import('./paginas/Ajuda'), 'Ajuda')
 const Auditoria = carregar(() => import('./paginas/Auditoria'), 'Auditoria')
 const Backup = carregar(() => import('./paginas/Backup'), 'Backup')
+const BolaoPublico = carregar(() => import('./paginas/BolaoPublico'), 'BolaoPublico')
 const Boloes = carregar(() => import('./paginas/Boloes'), 'Boloes')
 const BolaoDetalhe = carregar(() => import('./paginas/Boloes'), 'BolaoDetalhe')
 const Conta = carregar(() => import('./paginas/Conta'), 'Conta')
@@ -73,6 +74,7 @@ export function App() {
               <Route path="fontes" element={<Fontes />} />
               <Route path="estatisticas" element={<Estatisticas />} />
               <Route path="p/:token" element={<MinhaParticipacao />} />
+              <Route path="b/:token" element={<BolaoPublico />} />
             </Route>
             <Route element={<RotaAdm />}>
               <Route path="painel" element={<Painel />} />

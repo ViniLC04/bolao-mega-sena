@@ -25,7 +25,7 @@ Programa web (celular e computador) **só para a Mega da Virada** que substitui 
 - controlar participantes, cotas, pagamentos, caixinha e entrega das vias;
 - calcular **probabilidades** por recibo e por bolão;
 - manter o **banco de concursos** (direto da Caixa) e **conferir** automaticamente se o bolão ganhou e quanto, com valores oficiais;
-- oferecer ao apostador uma visão pública sem nomes de ninguém.
+- oferecer ao apostador uma visão pública sem nomes de ninguém (a página geral); quem receber o **link secreto do bolão** vê só o **primeiro nome** e as cotas de cada participante (decisão da Fase 6).
 
 Fora de escopo: outras loterias, apostas feitas dentro do app, pagamento online, notificações push.
 
@@ -250,13 +250,13 @@ Frequência, atraso, pares/ímpares, soma, linhas do volante, consecutivos; **fi
 |---|---|---|
 | Acesso | **usuário e senha** | link público, sem login |
 | Bolões | simulador, gerador, cruzamento, criar, congelar | vê jogos congelados |
-| Participantes | nomes, cotas, pagamentos, via entregue, caixinha | **sem nomes**: totais de cotas, pagos, arrecadado |
+| Participantes | nomes, cotas, pagamentos, via entregue, caixinha | página geral **sem nomes** (totais de cotas, pagos, arrecadado); com o **link secreto do bolão**: primeiro nome + cotas; com o **link pessoal**: só as próprias cotas e situação |
 | Regras/fontes | edita | leitura |
 | Conferência | rateio oficial e simulações | acertos, "ganhou?", valor por cota |
 | Estatísticas | todas | todas (leitura) |
 
 - **Senha do ADM:** mínimo 8 caracteres com maiúscula, minúscula, número e símbolo, validada na tela **e** no servidor; sem cadastro público; bloqueio após tentativas erradas; "usuário" mapeado para o e-mail interno do Supabase Auth; recuperação por e-mail cadastrado. **[PREMISSA]** um único ADM. **[DECISÃO da Fase 2]**: o usuário vira o e-mail interno fixo `usuario@example.com` (domínio aceito pelo Supabase, testado na Fase 0); por isso a recuperação de senha **não chega por e-mail**: o dono do projeto troca a senha no painel do Supabase (Authentication → Users). O bloqueio após tentativas erradas é **parcial** na Fase 2 (limite por IP do próprio Supabase + espera crescente na tela). **[DECISÃO da Fase 5]**: no lugar do bloqueio de conta, o ADM usa **verificação em 2 passos (TOTP, código de 6 dígitos no celular)**: com um fator ativo, o banco (`is_adm()`) só trata a sessão como ADM no nível `aal2`, então a senha sozinha não lê nem escreve nada, nem por chamada direta à API. Sem fator ativo nada muda (para não trancar o dono de fora); a tela Conta ativa e desativa, e o Painel avisa enquanto não estiver ativa. Se o celular for perdido, o fator é removido no painel do Supabase. **O link pessoal secreto por participante entrou na Fase 5**: `#/p/<token>` mostra só as cotas, o valor e os jogos do(s) bolão(ões) em que aquela pessoa participa; o ADM liga, desliga e renova o link. A **foto do recibo** fica em armazenamento privado (só o ADM). O ADM tem telas de **Auditoria** e **Backup** (JSON e CSV de pagamentos).
-- **Privacidade no servidor:** Row Level Security; o público só acessa **visões agregadas/funções** (sem nomes). Nunca depender de ocultar na tela.
+- **Privacidade no servidor:** Row Level Security; o público só acessa **funções** do banco: a visão geral é agregada (sem nomes); as funções do link do bolão devolvem só **primeiro nome (homônimos numerados) e cotas**, e as do link pessoal só a própria pessoa; sobrenome, contato e quem pagou nunca saem do banco para o público. Nunca depender de ocultar na tela.
 - **Link pessoal secreto por participante** (opcional, liga/desliga): mostra só as cotas e o valor dele.
 - **Data limite de aposta:** um campo de data/hora editável pelo ADM; bloqueia novas cotas (ADM pode prorrogar) e alimenta a contagem regressiva exibida ao apostador.
 - Dados pessoais mínimos (nome, cotas, status de pagamento). O repositório é público: **nenhum dado de participante, chave secreta ou planilha com nomes pode ir ao Git** (`dados/` no `.gitignore`).
@@ -305,6 +305,6 @@ Marcos sugeridos: fases 0–2 até 30/11; fase 3 até 10/12; fase 4 até 20/12; 
 ## 17. Critérios de aceite global
 1. Nenhum valor de regra fixo no código; tudo em `rules.json`.
 2. Todos os vetores de teste passam.
-3. O público nunca vê nomes (testado por chamada direta).
+3. O público nunca vê sobrenome, contato nem quem pagou; sem link secreto não vê nome nenhum (testado por chamada direta).
 4. Valor do prêmio sempre vindo do rateio oficial; estimativas sempre rotuladas.
 5. O ADM consegue, sozinho, criar um bolão, registrar cotas e conferir um concurso.

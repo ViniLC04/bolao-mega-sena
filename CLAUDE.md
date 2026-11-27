@@ -35,7 +35,7 @@ Projeto: programa web (PWA, celular e computador) para organizar o bolão da Meg
 
 ## Segurança e privacidade
 - Login do ADM por **usuário e senha** (Supabase Auth; usuário mapeado para e-mail interno). Senha: mínimo 8, com maiúscula, minúscula, número e símbolo — validar na tela **e** no servidor. Sem cadastro público.
-- **Row Level Security** em todas as tabelas. O público só lê visões/funções agregadas (sem nomes). Teste chamando a API diretamente.
+- **Row Level Security** em todas as tabelas. O público só lê funções do banco: a página geral é agregada **sem nomes**; só com o **link secreto do bolão** aparece o **primeiro nome + cotas** (nunca sobrenome, contato nem quem pagou) e só com o **link pessoal** aparecem as cotas da própria pessoa (decisão do organizador na Fase 6; o link é desligável e renovável). Teste chamando a API diretamente.
 - O repositório é **público**: **nunca** commitar dados de participantes, chaves secretas, `.env`, nem as planilhas com nomes. Crie `.gitignore` incluindo `dados/` e `.env*` **no primeiro commit**.
 - Registre alterações em tabela de auditoria. Ofereça backup exportável.
 

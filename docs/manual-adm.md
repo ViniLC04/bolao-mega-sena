@@ -89,6 +89,14 @@ Este manual explica, passo a passo, tudo o que você faz no app. Você não prec
 3. Ela vê apenas as cotas, o valor e o bolão em que participa. Não vê ninguém mais.
 4. **Novo** troca o link por outro (o antigo para de funcionar). **Desligar** apaga o acesso.
 
+## 10b. Link público do bolão (para o grupo)
+
+1. Abra o bolão em **Bolões** e vá ao quadro **Link público do bolão**.
+2. Clique em **Gerar link público**. O link é copiado: cole no grupo do bolão.
+3. Quem abrir vê o nome do bolão, o prazo, quantas cotas foram vendidas, o total arrecadado, **quem está no bolão (só o primeiro nome) e quantas cotas cada um tem**, e os jogos depois de congelados.
+4. Não aparecem sobrenome, contato nem quem já pagou. Se dois participantes tiverem o mesmo primeiro nome, aparecem como "Ana (1)" e "Ana (2)".
+5. **Gerar link novo** troca o endereço (o antigo para de funcionar). **Desligar** tira o acesso. Mande o link só para quem participa.
+
 ## 11. Caixinha
 
 Em **Caixinha**, dentro do bolão, o app mostra a sobra do arredondamento da cota. Lance entradas e saídas à parte com o motivo.

@@ -55,6 +55,8 @@ const PESSOA = 'RLS TESTE PESSOA SECRETA'
 const OUTRA = 'RLS TESTE OUTRA PESSOA'
 const TOKEN_A = randomBytes(32).toString('hex') // link pessoal de teste da PESSOA
 const TOKEN_B = randomBytes(32).toString('hex') // link pessoal de teste da OUTRA
+const TOKEN_BOLAO = randomBytes(32).toString('hex') // link público de teste do bolão
+const TOKEN_INVASOR = randomBytes(32).toString('hex')
 const CONCURSO = 999_999
 const svc = cab(SECRET)
 const SVC_REP = cab(SECRET, { Prefer: 'return=representation' })
@@ -130,6 +132,7 @@ async function main() {
   const cotaId = String(cota.id)
   const mov = await criar('caixinha_mov', { bolao_id: bolaoId, valor_cent: 100, motivo: 'rls teste' })
   const movId = String(mov.id)
+  await criar('bolao_links', { bolao_id: bolaoId, token: TOKEN_BOLAO, ativo: true })
   await criar('fontes_log', { origem: 'rls-teste', resultado: 'rls-teste' })
   // Uma foto de teste no armazenamento privado (enviada com a chave secreta)
   const subida = await fetch(`${URL_BASE}/storage/v1/object/recibos/rls-teste/x.jpg`, { method: 'POST', headers: { ...svc, 'Content-Type': 'image/jpeg' }, body: Buffer.from('foto de teste') })
@@ -140,7 +143,7 @@ async function main() {
     { nome: 'USUÁRIO COMUM logado', headers: { apikey: ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' } },
   ]
 
-  const tabelasAdm = ['admins', 'config', 'auditoria', 'bolaos', 'recibos', 'jogos', 'combinacoes_cobertas', 'participantes', 'cotas', 'caixinha_mov', 'fontes_log']
+  const tabelasAdm = ['admins', 'config', 'auditoria', 'bolaos', 'recibos', 'jogos', 'combinacoes_cobertas', 'participantes', 'cotas', 'caixinha_mov', 'fontes_log', 'bolao_links']
   const tabelasPublicas = ['rules_versions', 'concursos', 'concurso_faixas']
 
   // Para cada tabela: um INSERT que seria VÁLIDO, uma alteração e uma exclusão de linha que existe.
@@ -154,6 +157,7 @@ async function main() {
     combinacoes_cobertas: { insere: { concurso: CONCURSO, combo_rank: 2, bolao_id: bolaoId }, filtro: `concurso=eq.${CONCURSO}`, altera: { combo_rank: 3 } },
     participantes: { insere: { nome: 'INVASOR' }, filtro: `id=eq.${pessoaId}`, altera: { nome: 'INVASOR' } },
     cotas: { insere: { participante_id: pessoaId, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 1 }, filtro: `id=eq.${cotaId}`, altera: { pago: true } },
+    bolao_links: { insere: { bolao_id: bolaoId, token: TOKEN_INVASOR }, filtro: `bolao_id=eq.${bolaoId}`, altera: { ativo: false } },
     fontes_log: { insere: { origem: 'invasor', resultado: 'invasor' }, filtro: 'origem=eq.rls-teste', altera: { resultado: 'invasor' } },
     caixinha_mov: { insere: { bolao_id: bolaoId, valor_cent: 1, motivo: 'invasor' }, filtro: `id=eq.${movId}`, altera: { motivo: 'invasor' } },
     rules_versions: { insere: { vigencia_inicio: '2099-01-01', json: {} }, filtro: 'vigencia_inicio=eq.2098-01-01', altera: { json: { x: 1 } } },
@@ -233,6 +237,24 @@ async function main() {
     ok(curto.status === 200 && curto.texto.trim() === '[]', 'link pessoal: token curto não devolve nada', `HTTP ${curto.status}`)
     const jg = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_participante_jogos', { p_token: TOKEN_A, p_bolao: bolaoId })
     ok(jg.status === 200 && jg.texto.trim() === '[]', 'link pessoal: não mostra jogos de bolão em rascunho', `HTTP ${jg.status}`)
+
+    // Link público do bolão: só primeiro nome e cotas; token errado não mostra nada
+    const lb = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_bolao_participantes', { p_token: TOKEN_BOLAO })
+    const lbJson = json(lb) as { nome: string; qtd: number }[] | null
+    ok(
+      lb.status === 200 && Array.isArray(lbJson) && lbJson.length === 2 && lbJson.every((x) => /^RLS( \(\d\))?$/.test(x.nome)) && !/(PESSOA|SECRETA|OUTRA|contato)/.test(lb.texto),
+      'link do bolão: só o primeiro nome e as cotas (sem sobrenome nem contato)',
+      `HTTP ${lb.status} ${lb.texto.slice(0, 80)}`,
+    )
+    const lbRes = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_bolao', { p_token: TOKEN_BOLAO })
+    const lbResJson = json(lbRes) as { cotas_vendidas: number }[] | null
+    ok(lbRes.status === 200 && Array.isArray(lbResJson) && lbResJson.length === 1 && lbResJson[0].cotas_vendidas === 2 && !/(PESSOA|SECRETA|OUTRA|contato)/.test(lbRes.texto), 'link do bolão: o resumo traz só totais', `HTTP ${lbRes.status}`)
+    const lbJogos = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_bolao_jogos', { p_token: TOKEN_BOLAO })
+    ok(lbJogos.status === 200 && lbJogos.texto.trim() === '[]', 'link do bolão: não mostra jogos de bolão em rascunho', `HTTP ${lbJogos.status}`)
+    for (const fn of ['publico_bolao', 'publico_bolao_participantes', 'publico_bolao_jogos']) {
+      const errado = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, { p_token: randomBytes(32).toString('hex') })
+      ok(errado.status === 200 && errado.texto.trim() === '[]', `link do bolão: ${fn} com token errado não devolve nada`, `HTTP ${errado.status}`)
+    }
 
     // Fotos de recibo: o armazenamento é privado
     const baixar = await fetch(`${URL_BASE}/storage/v1/object/recibos/rls-teste/x.jpg`, { headers: c.headers })

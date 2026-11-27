@@ -25,6 +25,45 @@ export interface JogoPublico {
   dezenas: number[]
 }
 
+/** Link público do bolão: resumo (só totais). */
+export interface ResumoBolaoPorLink {
+  bolao_id: string
+  nome: string
+  concurso_alvo: number
+  n_cotas: number
+  cota_cent: number | null
+  status: 'rascunho' | 'congelado'
+  congelado_em: string | null
+  hash: string | null
+  jogos: number
+  custo_cent: number
+  cotas_vendidas: number
+  cotas_pagas: number
+  previsto_cent: number
+  arrecadado_cent: number
+  vias_entregues: number
+}
+
+/** Quem está no bolão: SÓ o primeiro nome (homônimos numerados) e as cotas. */
+export interface ParticipanteDoLink {
+  nome: string
+  qtd: number
+}
+
+/** Tudo do link público de um bolão. Link errado ou desligado = `resumo` nulo. */
+export async function carregarBolaoPorLink(token: string): Promise<{ resumo: ResumoBolaoPorLink | null; participantes: ParticipanteDoLink[]; erro: string | null }> {
+  const [r, p] = await Promise.all([supabase.rpc('publico_bolao', { p_token: token }), supabase.rpc('publico_bolao_participantes', { p_token: token })])
+  if (r.error || p.error) return { resumo: null, participantes: [], erro: 'Não consegui carregar agora. Tente de novo.' }
+  const linhas = (r.data ?? []) as ResumoBolaoPorLink[]
+  return { resumo: linhas[0] ?? null, participantes: (p.data ?? []) as ParticipanteDoLink[], erro: null }
+}
+
+export async function carregarJogosPorLink(token: string): Promise<{ jogos: JogoPublico[]; erro: string | null }> {
+  const { data, error } = await supabase.rpc('publico_bolao_jogos', { p_token: token })
+  if (error) return { jogos: [], erro: 'Não consegui carregar os jogos agora.' }
+  return { jogos: (data ?? []) as JogoPublico[], erro: null }
+}
+
 /** Uma linha por bolão em que a pessoa dona do link participa. */
 export interface MinhaParticipacaoLinha {
   participante: string

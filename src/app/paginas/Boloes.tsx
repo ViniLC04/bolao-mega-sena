@@ -8,6 +8,7 @@ import { descreverRecibo } from '../plano'
 import { useRegras } from '../regras'
 import { ChancesBolao } from '../ChancesBolao'
 import { FotoRecibo } from '../FotoRecibo'
+import { LinkDoBolao } from '../LinkDoBolao'
 import { ConferenciaBolao, type ParticipanteConferencia } from '../Conferencia'
 import { listarCotas } from '../../data/participantes'
 import { CotasBolao } from './CotasBolao'
@@ -242,6 +243,8 @@ export function BolaoDetalhe() {
           </div>
         </section>
       )}
+
+      <LinkDoBolao bolaoId={bolao.id} />
 
       <CotasBolao bolao={bolao} custoCent={totalCent} />
 

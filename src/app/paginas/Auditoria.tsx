@@ -9,6 +9,7 @@ function semSegredos(d: Record<string, unknown> | null): string {
   if (!d) return ''
   const c = { ...d }
   if ('link_token' in c && c.link_token) c.link_token = '(segredo oculto)'
+  if ('token' in c && c.token) c.token = '(segredo oculto)'
   return JSON.stringify(c, null, 2)
 }
 
