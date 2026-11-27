@@ -19,6 +19,10 @@ alter table public.bolaos add column if not exists inscricoes_encerradas_em time
 
 alter table public.bolaos drop constraint if exists bolaos_status_check;
 alter table public.bolaos add constraint bolaos_status_check check (status in ('aberto', 'rascunho', 'congelado'));
+-- a regra "congelado tem data e hash" não vale para aberto nem rascunho
+alter table public.bolaos drop constraint if exists bolao_congelado_completo;
+alter table public.bolaos add constraint bolao_congelado_completo
+  check (status in ('aberto', 'rascunho') or (congelado_em is not null and hash is not null));
 -- só o bolão aberto pode ficar sem N
 alter table public.bolaos drop constraint if exists bolao_com_n;
 alter table public.bolaos add constraint bolao_com_n check (status = 'aberto' or n_cotas is not null);
