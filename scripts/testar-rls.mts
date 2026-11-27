@@ -290,9 +290,9 @@ async function main() {
     ok(lerComp.status >= 400 || (Array.isArray(lerCompJson) && lerCompJson.length === 0), 'comprovantes: não lista', `HTTP ${lerComp.status}`)
 
     // Conta do apostador (Fase 9): só quem está logado vincula; a conta comum só vê o que vinculou
-    const vinc = await chamar(c.headers, 'POST', '/rest/v1/rpc/vincular_minha_conta', { p_token: TOKEN_A })
-    const minhas = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
     if (c.nome.startsWith('PÚBLICO')) {
+      const vinc = await chamar(c.headers, 'POST', '/rest/v1/rpc/vincular_minha_conta', { p_token: TOKEN_A })
+      const minhas = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
       ok(vinc.status >= 400, 'conta: visitante sem login não vincula', `HTTP ${vinc.status}`)
       ok(minhas.status >= 400, 'conta: visitante sem login não lista participações', `HTTP ${minhas.status}`)
     } else {
