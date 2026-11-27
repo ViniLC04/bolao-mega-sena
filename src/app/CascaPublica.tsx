@@ -6,7 +6,8 @@ const classe = ({ isActive }: { isActive: boolean }) => (isActive ? 'ativo' : un
 
 /** Casca das páginas públicas (capa, bolões, estatísticas, fontes, links): cabeçalho com a marca e o menu. */
 export function CascaPublica() {
-  const { adm } = useAuth()
+  const { adm, sessao } = useAuth()
+  const apostador = !!sessao && !adm
   return (
     <div>
       <header className="publico-topo">
@@ -28,6 +29,11 @@ export function CascaPublica() {
             <NavLink to="/fontes" className={classe}>
               Fontes
             </NavLink>
+            {!adm && (
+              <NavLink to={apostador ? '/minha-area' : '/apostador'} className={classe}>
+                {apostador ? 'Minha área' : 'Sou apostador'}
+              </NavLink>
+            )}
             <NavLink to={adm ? '/painel' : '/entrar'} className={classe}>
               {adm ? 'Painel' : 'Organizador'}
             </NavLink>

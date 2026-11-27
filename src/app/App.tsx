@@ -14,6 +14,8 @@ const carregar = <T extends Record<string, React.ComponentType>>(importar: () =>
   lazy(() => importar().then((m) => ({ default: m[nome] })))
 
 const Ajuda = carregar(() => import('./paginas/Ajuda'), 'Ajuda')
+const Apostador = carregar(() => import('./paginas/Apostador'), 'Apostador')
+const MinhaArea = carregar(() => import('./paginas/MinhaArea'), 'MinhaArea')
 const Auditoria = carregar(() => import('./paginas/Auditoria'), 'Auditoria')
 const Backup = carregar(() => import('./paginas/Backup'), 'Backup')
 const BolaoPublico = carregar(() => import('./paginas/BolaoPublico'), 'BolaoPublico')
@@ -73,6 +75,8 @@ export function App() {
               <Route path="publico" element={<Publico />} />
               <Route path="fontes" element={<Fontes />} />
               <Route path="estatisticas" element={<Estatisticas />} />
+              <Route path="apostador" element={<Apostador />} />
+              <Route path="minha-area" element={<MinhaArea />} />
               <Route path="p/:token" element={<MinhaParticipacao />} />
               <Route path="b/:token" element={<BolaoPublico />} />
             </Route>

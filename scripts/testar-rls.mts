@@ -289,6 +289,25 @@ async function main() {
     const lerCompJson = json(lerComp)
     ok(lerComp.status >= 400 || (Array.isArray(lerCompJson) && lerCompJson.length === 0), 'comprovantes: não lista', `HTTP ${lerComp.status}`)
 
+    // Conta do apostador (Fase 9): só quem está logado vincula; a conta comum só vê o que vinculou
+    const vinc = await chamar(c.headers, 'POST', '/rest/v1/rpc/vincular_minha_conta', { p_token: TOKEN_A })
+    const minhas = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
+    if (c.nome.startsWith('PÚBLICO')) {
+      ok(vinc.status >= 400, 'conta: visitante sem login não vincula', `HTTP ${vinc.status}`)
+      ok(minhas.status >= 400, 'conta: visitante sem login não lista participações', `HTTP ${minhas.status}`)
+    } else {
+      const vazio = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
+      const vazioJson = json(vazio)
+      ok(vazio.status === 200 && Array.isArray(vazioJson) && vazioJson.length === 0, 'conta: conta nova não vê participação nenhuma', `HTTP ${vazio.status}`)
+      const ruim = await chamar(c.headers, 'POST', '/rest/v1/rpc/vincular_minha_conta', { p_token: TOKEN_INVASOR })
+      ok((json(ruim) as { ok?: boolean } | null)?.ok === false, 'conta: token inventado não vincula')
+      const bom = await chamar(c.headers, 'POST', '/rest/v1/rpc/vincular_minha_conta', { p_token: TOKEN_A })
+      ok((json(bom) as { ok?: boolean } | null)?.ok === true, 'conta: com o link pessoal correto vincula', `HTTP ${bom.status} ${bom.texto.slice(0, 80)}`)
+      const lista = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
+      const listaJson = json(lista)
+      ok(Array.isArray(listaJson) && listaJson.length === 1 && (listaJson[0] as { link_token?: string }).link_token === TOKEN_A, 'conta: lista só a participação vinculada')
+    }
+
     // Fotos de recibo: o armazenamento é privado
     const baixar = await fetch(`${URL_BASE}/storage/v1/object/recibos/rls-teste/x.jpg`, { headers: c.headers })
     ok(baixar.status >= 400, 'fotos de recibo: não baixa', `HTTP ${baixar.status}`)
@@ -336,6 +355,8 @@ async function main() {
   ok((await listar('fontes_log', 'origem=eq.invasor')).length === 0, 'ninguém gravou no registro das fontes')
   const ad = await listar('admins', `user_id=eq.${comumId}`)
   ok(ad.length === 0, 'o usuário comum NÃO virou ADM')
+  ok(pp[0].user_id === comumId, 'o vínculo da conta de teste ficou só na participação certa')
+  ok((await listar('participantes', `id=eq.${outraIdTeste}`))[0]?.user_id == null, 'a outra pessoa continua sem conta ligada')
   const au = await listar('auditoria', 'acao=in.(invasor)')
   ok(au.length === 0, 'ninguém gravou na auditoria')
 }

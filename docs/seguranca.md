@@ -7,7 +7,7 @@ Marque cada item antes de abrir o bolão para os participantes. Quem confere cad
 |---|---|---|---|
 | 1 | Todas as tabelas com RLS ligada e forçada; o público (anon) sem permissão em tabela nenhuma de pessoas, cotas, caixinha, bolões, jogos, auditoria, config | `$env:NODE_USE_SYSTEM_CA = '1'; node scripts/testar-rls.mts` deve terminar com "tudo passou" | **eu** (Fase 2 a 5) |
 | 2 | O público só executa funções que devolvem totais e jogos de bolões congelados, sem nomes | mesmo teste (seção "responde sem nome") | **eu** |
-| 3 | Cadastro público desligado (`disable_signup`) | lido da API de configuração do Supabase: `disable_signup: true` | **eu** (conferido em 27/11/2026) |
+| 3 | Cadastro de contas **ligado a partir da Fase 9** (conta do apostador). Toda tabela exige `is_adm()` (tabela `admins` + 2 passos); conta comum não lê nem escreve nada além do público | `scripts/testar-rls.mts` (conta comum não é ADM, só vê o que vinculou com o link secreto) e `supabase/teste_fase9.sql` | **eu** |
 | 4 | Só existe 1 ADM (índice único) | `supabase/migrations/001_fase2.sql` | **eu** |
 | 5 | Bolão congelado não muda (gatilho no banco) | `supabase/teste_congelar.sql` ("TUDO OK") | **eu** |
 | 6 | Cotas nunca passam de N e depois da data limite não entram | `supabase/teste_cotas.sql` | **eu** (a data limite só vale com as regras gravadas no banco, ver item 12) |

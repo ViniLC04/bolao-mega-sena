@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { vincularMinhaConta } from '../../data/apostador'
+import { useAuth } from '../auth'
 import { carregarBolaoPorLink, carregarJogosPorLink, inscreverNoBolao, type JogoPublico, type ParticipanteDoLink, type ResumoBolaoPorLink } from '../../data/publico'
 import { ChancesBolao } from '../ChancesBolao'
 import { ConferenciaBolao } from '../Conferencia'
@@ -23,6 +25,8 @@ function lerMeuLink(tokenBolao: string): string | null {
 /** "Quero participar": a pessoa se cadastra sozinha, só para si, e vai para o link pessoal (com o PIX). */
 function QueroParticipar({ tokenBolao, resumo }: { tokenBolao: string; resumo: ResumoBolaoPorLink }) {
   const navigate = useNavigate()
+  const { sessao, adm } = useAuth()
+  const apostador = !!sessao && !adm
   const [nome, setNome] = useState('')
   const [zap, setZap] = useState('')
   const [qtd, setQtd] = useState(1)
@@ -41,6 +45,7 @@ function QueroParticipar({ tokenBolao, resumo }: { tokenBolao: string; resumo: R
     const r = await inscreverNoBolao(tokenBolao, nome, zap, qtd)
     setOcupado(false)
     if (r.erro || !r.token) return setErro(r.erro)
+    if (apostador) await vincularMinhaConta(r.token) // se falhar, o link pessoal continua valendo; dá para vincular depois
     try {
       localStorage.setItem(chaveMeuLink(tokenBolao), r.token)
     } catch {
@@ -55,6 +60,13 @@ function QueroParticipar({ tokenBolao, resumo }: { tokenBolao: string; resumo: R
       {meuLink && (
         <p className="ok">
           Você já se inscreveu neste aparelho. <Link to={`/p/${meuLink}`}>Abrir a minha participação</Link>
+        </p>
+      )}
+      {apostador ? (
+        <p className="ok pequeno">Você está com a conta aberta: esta inscrição fica ligada a ela e aparece em “Minha área”.</p>
+      ) : (
+        <p className="muted pequeno">
+          Quer guardar o histórico das suas cotas? <Link to="/apostador">Crie sua conta ou entre</Link> antes de se inscrever.
         </p>
       )}
       <form onSubmit={(e) => void enviar(e)}>

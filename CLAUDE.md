@@ -34,7 +34,7 @@ Projeto: programa web (PWA, celular e computador) para organizar o bolão da Meg
 - Cite **ValorFinal** (CC BY 4.0) e **Caixa** na tela "Fontes" se usar o CSV do ValorFinal.
 
 ## Segurança e privacidade
-- Login do ADM por **usuário e senha** (Supabase Auth; usuário mapeado para e-mail interno). Senha: mínimo 8, com maiúscula, minúscula, número e símbolo — validar na tela **e** no servidor. Sem cadastro público.
+- Login do ADM por **usuário e senha** (Supabase Auth; usuário mapeado para e-mail interno). Senha: mínimo 8, com maiúscula, minúscula, número e símbolo — validar na tela **e** no servidor. O ADM não tem cadastro público. **Fase 9:** o apostador pode criar conta (e-mail + senha, sem confirmação de e-mail); a conta não é ADM e só vê as participações cujo link pessoal secreto vinculou (`vincular_minha_conta`, `minhas_participacoes`).
 - **Row Level Security** em todas as tabelas. O público só lê funções do banco: a página geral é agregada **sem nomes**; só com o **link secreto do bolão** aparece o **primeiro nome + cotas** (nunca sobrenome, contato nem quem pagou) e só com o **link pessoal** aparecem as cotas da própria pessoa (decisão do organizador na Fase 6; o link é desligável e renovável). Teste chamando a API diretamente.
 - O repositório é **público**: **nunca** commitar dados de participantes, chaves secretas, `.env`, nem as planilhas com nomes. Crie `.gitignore` incluindo `dados/` e `.env*` **no primeiro commit**.
 - Registre alterações em tabela de auditoria. Ofereça backup exportável.
