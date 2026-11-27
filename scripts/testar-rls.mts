@@ -130,6 +130,8 @@ async function main() {
   await criar('cotas', { participante_id: outraIdTeste, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 10_000 })
   const cota = await criar('cotas', { participante_id: pessoaId, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 10_000 })
   const cotaId = String(cota.id)
+  await criar('comprovantes', { cota_id: cotaId, caminho: 'rls-teste/comprovante.jpg' })
+  await criar('inscricoes_log', { bolao_id: bolaoId, resultado: 'rls-teste' })
   const mov = await criar('caixinha_mov', { bolao_id: bolaoId, valor_cent: 100, motivo: 'rls teste' })
   const movId = String(mov.id)
   await criar('bolao_links', { bolao_id: bolaoId, token: TOKEN_BOLAO, ativo: true })
@@ -143,7 +145,7 @@ async function main() {
     { nome: 'USUÁRIO COMUM logado', headers: { apikey: ANON, Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' } },
   ]
 
-  const tabelasAdm = ['admins', 'config', 'auditoria', 'bolaos', 'recibos', 'jogos', 'combinacoes_cobertas', 'participantes', 'cotas', 'caixinha_mov', 'fontes_log', 'bolao_links']
+  const tabelasAdm = ['admins', 'config', 'auditoria', 'bolaos', 'recibos', 'jogos', 'combinacoes_cobertas', 'participantes', 'cotas', 'caixinha_mov', 'fontes_log', 'bolao_links', 'comprovantes', 'inscricoes_log']
   const tabelasPublicas = ['rules_versions', 'concursos', 'concurso_faixas']
 
   // Para cada tabela: um INSERT que seria VÁLIDO, uma alteração e uma exclusão de linha que existe.
@@ -156,7 +158,9 @@ async function main() {
     jogos: { insere: { recibo_id: reciboId, ordem: 9, dezenas: [1, 2, 3, 4, 5, 6, 7] }, filtro: `id=eq.${jogoId}`, altera: { travado: true } },
     combinacoes_cobertas: { insere: { concurso: CONCURSO, combo_rank: 2, bolao_id: bolaoId }, filtro: `concurso=eq.${CONCURSO}`, altera: { combo_rank: 3 } },
     participantes: { insere: { nome: 'INVASOR' }, filtro: `id=eq.${pessoaId}`, altera: { nome: 'INVASOR' } },
-    cotas: { insere: { participante_id: pessoaId, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 1 }, filtro: `id=eq.${cotaId}`, altera: { pago: true } },
+    cotas: { insere: { participante_id: pessoaId, bolao_id: bolaoId, qtd: 1, valor_devido_cent: 1 }, filtro: `id=eq.${cotaId}`, altera: { qtd_paga: 1 } },
+    comprovantes: { insere: { cota_id: cotaId, caminho: 'rls-teste/invasor.jpg' }, filtro: 'caminho=eq.rls-teste/comprovante.jpg', altera: { nome_arquivo: 'invasor' } },
+    inscricoes_log: { insere: { bolao_id: bolaoId, resultado: 'invasor' }, filtro: `bolao_id=eq.${bolaoId}`, altera: { resultado: 'invasor' } },
     bolao_links: { insere: { bolao_id: bolaoId, token: TOKEN_INVASOR }, filtro: `bolao_id=eq.${bolaoId}`, altera: { ativo: false } },
     fontes_log: { insere: { origem: 'invasor', resultado: 'invasor' }, filtro: 'origem=eq.rls-teste', altera: { resultado: 'invasor' } },
     caixinha_mov: { insere: { bolao_id: bolaoId, valor_cent: 1, motivo: 'invasor' }, filtro: `id=eq.${movId}`, altera: { motivo: 'invasor' } },
@@ -213,9 +217,9 @@ async function main() {
     })
     const regJson = json(reg) as { ok?: boolean } | null
     ok(reg.status === 200 && regJson?.ok === false, 'registrar_concurso recusa um concurso que já existe', `HTTP ${reg.status} ${reg.texto.slice(0, 60)}`)
-    for (const fn of ['fechar_inscricoes', 'reabrir_inscricoes']) {
-      const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, { p_bolao: bolaoId })
-      ok(r.status >= 400, `${fn}() é recusada`, `HTTP ${r.status}`)
+    {
+      const r = await chamar(c.headers, 'POST', '/rest/v1/rpc/reabrir_inscricoes', { p_bolao: bolaoId })
+      ok(r.status >= 400, 'reabrir_inscricoes() é recusada', `HTTP ${r.status}`)
     }
     for (const fn of ['confirmar_concurso', 'rejeitar_concurso']) {
       const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, { p_numero: 1 })
@@ -259,6 +263,31 @@ async function main() {
       const errado = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, { p_token: randomBytes(32).toString('hex') })
       ok(errado.status === 200 && errado.texto.trim() === '[]', `link do bolão: ${fn} com token errado não devolve nada`, `HTTP ${errado.status}`)
     }
+
+    // Autoatendimento (Fase 8): o link do bolão de teste está com a inscrição DESLIGADA; token errado nunca inscreve
+    const insc = await chamar(c.headers, 'POST', '/rest/v1/rpc/inscrever_no_bolao', { p_token: TOKEN_BOLAO, p_nome: 'Fulano de Tal', p_whatsapp: '11999990000', p_qtd: 1 })
+    const inscJson = json(insc) as { ok?: boolean } | null
+    ok(insc.status === 200 && inscJson?.ok === false, 'inscrição pelo link desligado é recusada', `HTTP ${insc.status}`)
+    const inscErr = await chamar(c.headers, 'POST', '/rest/v1/rpc/inscrever_no_bolao', { p_token: randomBytes(32).toString('hex'), p_nome: 'Fulano de Tal', p_whatsapp: '11999990000', p_qtd: 1 })
+    ok(inscErr.status === 200 && (json(inscErr) as { ok?: boolean } | null)?.ok === false, 'inscrição com token errado é recusada', `HTTP ${inscErr.status}`)
+    const aum = await chamar(c.headers, 'POST', '/rest/v1/rpc/aumentar_minhas_cotas', { p_token: TOKEN_A, p_bolao: bolaoId, p_nova_qtd: 5 })
+    ok(aum.status === 200 && (json(aum) as { ok?: boolean } | null)?.ok === false, 'aumentar cotas fora das condições é recusado', `HTTP ${aum.status}`)
+    const aumErr = await chamar(c.headers, 'POST', '/rest/v1/rpc/aumentar_minhas_cotas', { p_token: randomBytes(32).toString('hex'), p_bolao: bolaoId, p_nova_qtd: 5 })
+    ok(aumErr.status === 200 && (json(aumErr) as { ok?: boolean } | null)?.ok === false, 'aumentar cotas com token errado é recusado', `HTTP ${aumErr.status}`)
+    const pix = await chamar(c.headers, 'POST', '/rest/v1/rpc/publico_recebimento', { p_token: randomBytes(32).toString('hex') })
+    ok(pix.status === 200 && pix.texto.trim() === '[]', 'PIX do organizador: token errado não vê', `HTTP ${pix.status}`)
+    const comp = await chamar(c.headers, 'POST', '/rest/v1/rpc/enviar_comprovante', { p_token: randomBytes(32).toString('hex'), p_bolao: bolaoId, p_caminho: 'x/y.jpg', p_nome: 'y.jpg' })
+    ok(comp.status === 200 && (json(comp) as { ok?: boolean } | null)?.ok === false, 'comprovante com token errado é recusado', `HTTP ${comp.status}`)
+    for (const fn of ['fechar_inscricoes']) {
+      const r = await chamar(c.headers, 'POST', `/rest/v1/rpc/${fn}`, { p_bolao: bolaoId, p_descartar: true })
+      ok(r.status >= 400, `${fn}() é recusada`, `HTTP ${r.status}`)
+    }
+    // Comprovantes: o armazenamento é privado; só se envia com token pessoal válido (dentro da própria pasta)
+    const subirComp = await fetch(`${URL_BASE}/storage/v1/object/comprovantes/${randomBytes(32).toString('hex')}/invasor.jpg`, { method: 'POST', headers: { ...c.headers, 'Content-Type': 'image/jpeg' }, body: Buffer.from('invasor') })
+    ok(subirComp.status >= 400, 'comprovantes: não envia com token que não existe', `HTTP ${subirComp.status}`)
+    const lerComp = await chamar(c.headers, 'POST', '/storage/v1/object/list/comprovantes', { prefix: '', limit: 10 })
+    const lerCompJson = json(lerComp)
+    ok(lerComp.status >= 400 || (Array.isArray(lerCompJson) && lerCompJson.length === 0), 'comprovantes: não lista', `HTTP ${lerComp.status}`)
 
     // Fotos de recibo: o armazenamento é privado
     const baixar = await fetch(`${URL_BASE}/storage/v1/object/recibos/rls-teste/x.jpg`, { headers: c.headers })

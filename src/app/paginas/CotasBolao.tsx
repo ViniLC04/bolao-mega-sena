@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   criarParticipante,
+  definirPagas,
   incluirCota,
   lancarCaixinha,
   listarCaixinha,
@@ -69,7 +70,7 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
   }, [bolao.id])
 
   const resumo = resumoCotas(
-    cotas.map((c) => ({ qtd: c.qtd, valorDevidoCent: c.valor_devido_cent, pago: c.pago, viaEntregue: c.via_entregue })),
+    cotas.map((c) => ({ qtd: c.qtd, valorDevidoCent: c.valor_devido_cent, qtdPaga: c.qtd_paga, viaEntregue: c.via_entregue })),
     bolao.n_cotas ?? 0,
   )
   const aberto = bolao.n_cotas === null // inscrições abertas: ainda não existe N
@@ -111,7 +112,7 @@ export function CotasBolao({ bolao, custoCent }: { bolao: BolaoLinha; custoCent:
 
   async function marcar(c: CotaLinha, campo: 'pago' | 'via_entregue') {
     setErro(null)
-    const e = await marcarCota(c.id, campo, !c[campo])
+    const e = campo === 'pago' ? await definirPagas(c.id, c.pago ? 0 : c.qtd) : await marcarCota(c.id, campo, !c[campo])
     if (e) setErro(e)
     else await recarregar()
   }

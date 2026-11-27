@@ -32,9 +32,9 @@ begin
   insert into public.recibos (bolao_id, ordem, k, g, total_cent, cotas_n) values (v_b1, 1, 6, 1, 600, 10) returning id into v_r1;
   insert into public.jogos (recibo_id, ordem, dezenas) values (v_r1, 1, array[1,2,3,4,5,6]::smallint[]);
   -- horários diferentes, como na vida real (dentro de uma transação o now() é sempre igual): define quem é "Maria (1)"
-  insert into public.cotas (participante_id, bolao_id, qtd, valor_devido_cent, pago, criado_em) values (v_p1, v_b1, 4, 400, true, now() - interval '3 minutes');
-  insert into public.cotas (participante_id, bolao_id, qtd, valor_devido_cent, pago, criado_em) values (v_p2, v_b1, 2, 200, false, now() - interval '2 minutes');
-  insert into public.cotas (participante_id, bolao_id, qtd, valor_devido_cent, pago, criado_em) values (v_p3, v_b1, 3, 300, true, now() - interval '1 minute');
+  insert into public.cotas (participante_id, bolao_id, qtd, valor_devido_cent, qtd_paga, criado_em) values (v_p1, v_b1, 4, 400, 4, now() - interval '3 minutes');
+  insert into public.cotas (participante_id, bolao_id, qtd, valor_devido_cent, qtd_paga, criado_em) values (v_p2, v_b1, 2, 200, 0, now() - interval '2 minutes');
+  insert into public.cotas (participante_id, bolao_id, qtd, valor_devido_cent, qtd_paga, criado_em) values (v_p3, v_b1, 3, 300, 3, now() - interval '1 minute');
   insert into public.bolao_links (bolao_id, token, ativo) values (v_b1, v_tok, true);
 
   -- segundo bolão (em rascunho), com link ligado e outra pessoa: não pode vazar para o link do primeiro

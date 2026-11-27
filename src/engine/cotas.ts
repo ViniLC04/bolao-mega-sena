@@ -8,8 +8,14 @@ export interface CotaRegistro {
   qtd: number
   /** quanto ela deve, em centavos (qtd × cota cobrada na época do registro) */
   valorDevidoCent: number
-  pago: boolean
+  /** quantas dessas cotas já têm o pagamento confirmado pelo organizador (0 a qtd) */
+  qtdPaga: number
   viaEntregue: boolean
+}
+
+/** Quanto já foi pago: as cotas pagas valem o mesmo cada uma (centavos inteiros). */
+export function valorPagoCent(c: Pick<CotaRegistro, 'qtd' | 'valorDevidoCent' | 'qtdPaga'>): number {
+  return c.qtd > 0 ? Math.floor((c.valorDevidoCent * c.qtdPaga) / c.qtd) : 0
 }
 
 /** Valor devido por `qtd` cotas. */
@@ -41,17 +47,18 @@ export interface ResumoCotas {
   vendidoCent: number
   /** quantos participantes (registros) o bolão tem */
   registros: number
+  /** pessoas que ainda têm cota sem pagamento confirmado */
+  pessoasPendentes: number
 }
 
 export function resumoCotas(cotas: readonly CotaRegistro[], nCotas: number): ResumoCotas {
-  let vendidas = 0, pagas = 0, vias = 0, arrecadado = 0, vendido = 0
+  let vendidas = 0, pagas = 0, vias = 0, arrecadado = 0, vendido = 0, pendentes = 0
   for (const c of cotas) {
     vendidas += c.qtd
     vendido += c.valorDevidoCent
-    if (c.pago) {
-      pagas += c.qtd
-      arrecadado += c.valorDevidoCent
-    }
+    pagas += c.qtdPaga
+    arrecadado += valorPagoCent(c)
+    if (c.qtdPaga < c.qtd) pendentes++
     if (c.viaEntregue) vias += c.qtd
   }
   return {
@@ -65,6 +72,7 @@ export function resumoCotas(cotas: readonly CotaRegistro[], nCotas: number): Res
     aReceberCent: vendido - arrecadado,
     vendidoCent: vendido,
     registros: cotas.length,
+    pessoasPendentes: pendentes,
   }
 }
 

@@ -41,8 +41,8 @@ begin
   end;
 
   -- 3) marcar pago e via entregue funciona
-  update public.cotas set pago = true, via_entregue = true where participante_id = v_p1 and bolao_id = v_b;
-  update public.cotas set pago = true where participante_id = v_p2 and bolao_id = v_b;
+  update public.cotas set qtd_paga = qtd, via_entregue = true where participante_id = v_p1 and bolao_id = v_b;
+  update public.cotas set qtd_paga = qtd where participante_id = v_p2 and bolao_id = v_b;
 
   -- 4) uma pessoa só tem um registro por bolão
   begin

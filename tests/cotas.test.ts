@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { caixinha, resumoCotas, validarQtdCotas, valorDevido, verificarFechamento, type CotaRegistro } from '../src/engine/cotas'
+import { caixinha, resumoCotas, validarQtdCotas, valorDevido, valorPagoCent, verificarFechamento, type CotaRegistro } from '../src/engine/cotas'
 import { REGRAS } from './vectors/regras-teste'
 
-const c = (qtd: number, pago = false, via = false, cota = 10_000): CotaRegistro => ({ qtd, valorDevidoCent: valorDevido(qtd, cota), pago, viaEntregue: via })
+// `paga`: true = todas as cotas pagas; false = nenhuma; número = quantas cotas já têm o PIX confirmado
+const c = (qtd: number, paga: boolean | number = false, via = false, cota = 10_000): CotaRegistro => ({
+  qtd,
+  valorDevidoCent: valorDevido(qtd, cota),
+  qtdPaga: paga === true ? qtd : paga === false ? 0 : paga,
+  viaEntregue: via,
+})
 
 describe('cotas e pagamentos (centavos inteiros)', () => {
   it('valor devido', () => {
@@ -20,6 +26,19 @@ describe('cotas e pagamentos (centavos inteiros)', () => {
     expect(r.aReceberCent).toBe(70_000)
     expect(r.vendidoCent).toBe(140_000)
     expect(r.registros).toBe(4)
+    expect(r.pessoasPendentes).toBe(2)
+  })
+  it('pagamento parcial: quem aumentou as cotas deve só o que falta', () => {
+    // 4 cotas, 3 já com PIX confirmado: arrecadado = 3 × R$ 100, falta 1 × R$ 100
+    const r = resumoCotas([c(4, 3)], 20)
+    expect(r.pagas).toBe(3)
+    expect(r.naoPagas).toBe(1)
+    expect(r.arrecadadoCent).toBe(30_000)
+    expect(r.aReceberCent).toBe(10_000)
+    expect(r.pessoasPendentes).toBe(1)
+    expect(valorPagoCent(c(4, 3))).toBe(30_000)
+    expect(valorPagoCent(c(4, 0))).toBe(0)
+    expect(valorPagoCent(c(4, 4))).toBe(40_000)
   })
   it('bolão vazio', () => {
     const r = resumoCotas([], 20)

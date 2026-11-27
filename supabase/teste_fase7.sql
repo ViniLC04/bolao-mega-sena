@@ -55,13 +55,13 @@ begin
     if sqlerrm like 'FALHOU%' then raise; end if;
     if sqlerrm not like '%inscrições deste bolão encerraram%' then raise exception 'FALHOU: mensagem inesperada (inscrição): %', sqlerrm; end if;
   end;
-  update public.cotas set pago = true where participante_id = v_p1 and bolao_id = v_b;
+  update public.cotas set qtd_paga = qtd where bolao_id = v_b; -- fechar conta só as cotas pagas (Fase 8)
   -- prorrogar: volta a aceitar
   update public.bolaos set inscricoes_ate = now() + interval '1 day' where id = v_b;
 
   -- 4) fechar com cotas de menos (bolão A: 1 cota só) é recusado
   update public.bolaos set inscricoes_ate = now() + interval '1 day' where id = v_a;
-  insert into public.cotas (participante_id, bolao_id, qtd, valor_devido_cent) values (v_p1, v_a, 1, 10000);
+  insert into public.cotas (participante_id, bolao_id, qtd, valor_devido_cent, qtd_paga) values (v_p1, v_a, 1, 10000, 1);
   begin
     perform public.fechar_inscricoes(v_a);
     raise exception 'FALHOU: fechou com 1 cota';

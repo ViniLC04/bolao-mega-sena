@@ -38,9 +38,16 @@ export interface CotaLinha {
   bolao_id: string
   qtd: number
   valor_devido_cent: number
+  /** quantas cotas já têm o PIX confirmado */
+  qtd_paga: number
+  /** 'link' = a própria pessoa se inscreveu pelo link do bolão */
+  origem: 'adm' | 'link'
+  /** todas as cotas pagas (calculado pelo banco) */
   pago: boolean
   via_entregue: boolean
+  criado_em: string
   participantes: { nome: string; contato: string | null } | null
+  comprovantes: { id: string; caminho: string; nome_arquivo: string | null }[]
 }
 
 export interface MovCaixinha {
@@ -85,7 +92,7 @@ export async function apagarParticipante(id: string): Promise<string | null> {
 export async function listarCotas(bolaoId: string): Promise<{ lista: CotaLinha[]; erro: string | null }> {
   const { data, error } = await supabase
     .from('cotas')
-    .select('id, participante_id, bolao_id, qtd, valor_devido_cent, pago, via_entregue, participantes(nome, contato)')
+    .select('id, participante_id, bolao_id, qtd, valor_devido_cent, qtd_paga, origem, pago, via_entregue, criado_em, participantes(nome, contato), comprovantes(id, caminho, nome_arquivo)')
     .eq('bolao_id', bolaoId)
   if (error) return { lista: [], erro: 'Não consegui ler as cotas.' }
   const lista = ((data ?? []) as unknown as CotaLinha[]).sort((a, b) => (a.participantes?.nome ?? '').localeCompare(b.participantes?.nome ?? '', 'pt-BR'))
@@ -97,9 +104,30 @@ export async function incluirCota(participanteId: string, bolaoId: string, qtd: 
   return error ? traduzir(error.code, error.message, 'Não consegui incluir as cotas.') : null
 }
 
-export async function marcarCota(id: string, campo: 'pago' | 'via_entregue', valor: boolean): Promise<string | null> {
+export async function marcarCota(id: string, campo: 'via_entregue', valor: boolean): Promise<string | null> {
   const { error } = await supabase.from('cotas').update({ [campo]: valor }).eq('id', id)
   return error ? traduzir(error.code, error.message, 'Não consegui salvar a marcação.') : null
+}
+
+/** Confirma o pagamento de `qtdPaga` das cotas da pessoa (0 desfaz; a quantidade total confirma tudo). */
+export async function definirPagas(id: string, qtdPaga: number): Promise<string | null> {
+  const { error } = await supabase.from('cotas').update({ qtd_paga: qtdPaga }).eq('id', id)
+  return error ? traduzir(error.code, error.message, 'Não consegui confirmar o pagamento.') : null
+}
+
+/** O ADM muda a quantidade de cotas de uma pessoa (inclusive para menos). O valor devido acompanha; as pagas nunca passam do total. */
+export async function alterarQtdCota(c: { id: string; qtdPaga: number }, novaQtd: number, cotaCent: number): Promise<string | null> {
+  const { error } = await supabase
+    .from('cotas')
+    .update({ qtd_paga: Math.min(c.qtdPaga, novaQtd), qtd: novaQtd, valor_devido_cent: novaQtd * cotaCent })
+    .eq('id', c.id)
+  return error ? traduzir(error.code, error.message, 'Não consegui alterar a quantidade de cotas.') : null
+}
+
+/** Link temporário (60 s) para ver um comprovante enviado pela pessoa. */
+export async function linkDoComprovante(caminho: string): Promise<{ url: string | null; erro: string | null }> {
+  const { data, error } = await supabase.storage.from('comprovantes').createSignedUrl(caminho, 60)
+  return error || !data ? { url: null, erro: 'Não consegui abrir o comprovante agora.' } : { url: data.signedUrl, erro: null }
 }
 
 export async function removerCota(id: string): Promise<string | null> {
