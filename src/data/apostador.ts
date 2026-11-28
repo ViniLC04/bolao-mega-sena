@@ -97,6 +97,7 @@ export interface BolaoListado {
   inscricoes_ate: string | null
   inscricao_aberta: boolean
   token: string
+  descricao: string | null
 }
 
 /** Bolões que o organizador deixou visíveis para quem tem conta (abre em #/b/<token>). */

@@ -47,6 +47,7 @@ export interface ResumoBolaoPorLink {
   /** dá para se inscrever agora pelo link (ligado pelo ADM, bolão aberto e dentro do prazo) */
   autoinscricao: boolean
   max_cotas_pessoa: number
+  descricao: string | null
 }
 
 /** Quem está no bolão: SÓ o primeiro nome (homônimos numerados) e as cotas. */

@@ -92,6 +92,7 @@ function BoloesParaParticipar({ listados }: { listados: BolaoListado[] }) {
       {listados.map((b) => (
         <div key={b.bolao_id} style={{ padding: '8px 0', borderTop: '1px solid var(--borda)' }}>
           <strong>{b.nome}</strong>
+          {b.descricao && <div className="pequeno" style={{ whiteSpace: 'pre-line' }}>{b.descricao}</div>}
           <div className="muted pequeno">
             Concurso {b.concurso_alvo} · cota {formatarReais(b.cota_cent)} · {b.cotas_vendidas} de {b.n_cotas} cotas
             {b.inscricoes_ate ? ` · inscrições até ${formatarDataHoraSP(b.inscricoes_ate)}` : ''}

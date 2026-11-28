@@ -213,6 +213,12 @@ export function BolaoPublico() {
 
       {erro && <p className="erro">{erro}</p>}
 
+      {resumo.descricao && (
+        <section className="card" style={{ marginTop: 12 }}>
+          <p style={{ whiteSpace: 'pre-line', margin: 0 }}>{resumo.descricao}</p>
+        </section>
+      )}
+
       {resumo.autoinscricao && <QueroParticipar tokenBolao={token} resumo={resumo} />}
 
       <div className="grade" style={{ marginTop: 14 }}>

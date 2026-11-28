@@ -25,6 +25,8 @@ export interface BolaoLinha {
   /** bolão aberto: até quando se aceitam cotas novas */
   inscricoes_ate: string | null
   inscricoes_encerradas_em: string | null
+  /** texto livre do organizador (premissa do bolão) */
+  descricao: string | null
 }
 
 export interface JogoDet {
@@ -44,7 +46,7 @@ export interface ReciboDet {
 }
 
 const COLUNAS =
-  'id, concurso_alvo, nome, n_cotas, cota_base_cent, modo_cobranca, status, semente, criado_em, congelado_em, hash, regras_snapshot, inscricoes_ate, inscricoes_encerradas_em'
+  'id, concurso_alvo, nome, n_cotas, cota_base_cent, modo_cobranca, status, semente, criado_em, congelado_em, hash, regras_snapshot, inscricoes_ate, inscricoes_encerradas_em, descricao'
 
 function erroDoBanco(codigo: string | undefined, texto: string, padrao: string): string {
   if (codigo === '42501' || /row-level security|permission denied/i.test(texto)) return 'Só o ADM pode fazer isso.'
@@ -148,6 +150,7 @@ export interface DadosBolaoAberto {
   cotaCent: number
   /** até quando aceitar cotas novas (ISO com fuso) */
   inscricoesAte: string
+  descricao?: string
 }
 
 export async function criarBolaoAberto(d: DadosBolaoAberto): Promise<{ id: string | null; erro: string | null }> {
@@ -161,6 +164,7 @@ export async function criarBolaoAberto(d: DadosBolaoAberto): Promise<{ id: strin
       modo_cobranca: 'cota_fixa',
       status: 'aberto',
       inscricoes_ate: d.inscricoesAte,
+      descricao: d.descricao?.trim() ? d.descricao.trim() : null,
     })
     .select('id')
     .single()
@@ -294,6 +298,15 @@ export async function renomearBolao(bolaoId: string, nome: string): Promise<{ er
   if (error) return { erro: error.message.includes('Acesso negado') ? 'Sem permissão.' : 'Não consegui mudar o título agora. Se acabou de atualizar o site, rode o SQL 011 no Supabase.' }
   const r = data as { ok: boolean; erro?: string; nome?: string }
   return r?.ok ? { erro: null, nome: r.nome } : { erro: r?.erro ?? 'Não consegui mudar o título.' }
+}
+
+/** Grava a descrição do bolão (vale também depois de congelado; vai para a auditoria). */
+export async function definirDescricaoBolao(bolaoId: string, descricao: string): Promise<string | null> {
+  if (descricao.trim().length > 500) return 'A descrição pode ter no máximo 500 caracteres.'
+  const { data, error } = await supabase.rpc('definir_descricao_bolao', { p_bolao: bolaoId, p_descricao: descricao })
+  if (error) return error.message.includes('Acesso negado') ? 'Sem permissão.' : 'Não consegui salvar a descrição agora. Se acabou de atualizar o site, rode o SQL 012 no Supabase.'
+  const r = data as { ok: boolean; erro?: string }
+  return r?.ok ? null : (r?.erro ?? 'Não consegui salvar a descrição.')
 }
 
 export interface BolaoCongelado {

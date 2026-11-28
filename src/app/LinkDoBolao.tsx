@@ -1,9 +1,32 @@
 import { useEffect, useState } from 'react'
 import { carregarLinkDoBolao, definirAutoinscricao, definirListado, desligarLinkDoBolao, enderecoDoLinkDoBolao, ligarLinkDoBolao, type LinkDoBolao as Link } from '../data/boloes'
 import { carregarRecebimento } from '../data/recebimento'
+import { linkEnvioWhatsapp, montarConvite } from '../engine/convite'
+import { formatarDataHoraSP, formatarReais } from './formato'
+
+function mensagemConvite(token: string, c: DadosDoConvite, aberto: boolean): string {
+  return montarConvite({
+    nome: c.nome,
+    descricao: c.descricao,
+    concurso: c.concurso,
+    cotaTexto: c.cotaCent !== null ? formatarReais(c.cotaCent) : null,
+    prazoTexto: aberto && c.inscricoesAte ? formatarDataHoraSP(c.inscricoesAte) : null,
+    link: enderecoDoLinkDoBolao(token),
+    aberto,
+  })
+}
 
 /** Cartão do bolão (ADM): liga, copia, renova e desliga o link público do bolão (primeiros nomes e cotas). */
-export function LinkDoBolao({ bolaoId, aberto }: { bolaoId: string; aberto: boolean }) {
+export interface DadosDoConvite {
+  nome: string
+  descricao: string | null
+  concurso: number
+  cotaCent: number | null
+  inscricoesAte: string | null
+}
+
+export function LinkDoBolao({ bolaoId, aberto, convite }: { bolaoId: string; aberto: boolean; convite: DadosDoConvite }) {
+  const [textoEditado, setTextoEditado] = useState<string | null>(null)
   const [pixOk, setPixOk] = useState(true)
   const [link, setLink] = useState<Link | null>(null)
   const [carregando, setCarregando] = useState(true)
@@ -102,6 +125,40 @@ export function LinkDoBolao({ bolaoId, aberto }: { bolaoId: string; aberto: bool
             <button type="button" className="secundario" disabled={ocupado} onClick={() => void desligar()}>
               Desligar
             </button>
+          </div>
+
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--borda)' }}>
+            <h3 style={{ margin: '0 0 4px' }}>Convite por WhatsApp</h3>
+            <p className="muted pequeno">Mensagem pronta com título, descrição, concurso, valor da cota, prazo e o link. Você pode ajustar o texto antes de enviar; no WhatsApp escolha o contato ou o grupo.</p>
+            <textarea
+              rows={9}
+              value={textoEditado ?? mensagemConvite(link.token, convite, aberto)}
+              onChange={(e) => setTextoEditado(e.target.value)}
+              aria-label="Mensagem do convite"
+              style={{ width: '100%' }}
+            />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+              <a className="primario" style={{ textDecoration: 'none', padding: '10px 16px', borderRadius: 999 }} href={linkEnvioWhatsapp(textoEditado ?? mensagemConvite(link.token, convite, aberto))} target="_blank" rel="noopener noreferrer">
+                Enviar pelo WhatsApp
+              </a>
+              <button
+                type="button"
+                className="secundario"
+                onClick={() => {
+                  void navigator.clipboard
+                    .writeText(textoEditado ?? mensagemConvite(link.token, convite, aberto))
+                    .then(() => setMsg('Mensagem copiada.'))
+                    .catch(() => setMsg('Não consegui copiar sozinho: selecione o texto e copie.'))
+                }}
+              >
+                Copiar mensagem
+              </button>
+              {textoEditado !== null && (
+                <button type="button" className="secundario" onClick={() => setTextoEditado(null)}>
+                  Refazer o texto
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--borda)' }}>

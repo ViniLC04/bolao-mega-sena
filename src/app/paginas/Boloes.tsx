@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { apagarRascunho, carregarBolao, carregarBoloesCongelados, congelarBolao, criarBolaoAberto, listarBoloes, renomearBolao, type BolaoLinha, type ReciboDet } from '../../data/boloes'
+import { apagarRascunho, carregarBolao, carregarBoloesCongelados, congelarBolao, criarBolaoAberto, definirDescricaoBolao, listarBoloes, renomearBolao, type BolaoLinha, type ReciboDet } from '../../data/boloes'
 import { auditarBoloes, type RelatorioAuditoria } from '../../engine/auditoria'
 import { FaseDoBolao } from '../BolaoAberto'
 import { ChanceExpansivel } from '../Chance'
@@ -29,6 +29,7 @@ function NovoBolaoAberto({ concursoPadrao }: { concursoPadrao: number }) {
   const [cota, setCota] = useState('100,00')
   const [ate, setAte] = useState('')
   const [concurso, setConcurso] = useState(String(concursoPadrao))
+  const [descricao, setDescricao] = useState('')
   const [erro, setErro] = useState<string | null>(null)
   const [ocupado, setOcupado] = useState(false)
 
@@ -40,9 +41,10 @@ function NovoBolaoAberto({ concursoPadrao }: { concursoPadrao: number }) {
     if (cotaCent === null || cotaCent <= 0) return setErro('Informe o valor da cota em reais (ex.: 100,00).')
     if (!iso) return setErro('Escolha a data e a hora até quando as inscrições ficam abertas.')
     if (!Number.isInteger(conc) || conc < 1) return setErro('Informe o número do concurso.')
+    if (descricao.trim().length > 500) return setErro('A descrição pode ter no máximo 500 caracteres.')
     setOcupado(true)
     setErro(null)
-    const r = await criarBolaoAberto({ concurso: conc, nome: nome.trim(), cotaCent, inscricoesAte: iso })
+    const r = await criarBolaoAberto({ concurso: conc, nome: nome.trim(), cotaCent, inscricoesAte: iso, descricao })
     setOcupado(false)
     if (r.erro || !r.id) setErro(r.erro)
     else navigate(`/boloes/${r.id}`)
@@ -81,6 +83,11 @@ function NovoBolaoAberto({ concursoPadrao }: { concursoPadrao: number }) {
           <input value={concurso} onChange={(e) => setConcurso(e.target.value)} inputMode="numeric" />
         </label>
       </div>
+      <label className="campo">
+        <span>Descrição (opcional, até 500 letras)</span>
+        <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} maxLength={500} rows={3} placeholder="Ex.: bolão da família, cota fixa, só 1 recibo de 7 dezenas…" />
+        <small className="muted">Aparece para quem tem o link do bolão e na lista dos apostadores. Não coloque dados pessoais.</small>
+      </label>
       {erro && <p className="erro">{erro}</p>}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <button type="button" className="primario" disabled={ocupado} onClick={() => void criar()}>
@@ -216,6 +223,8 @@ export function BolaoDetalhe() {
   const [mensagem, setMensagem] = useState<string | null>(null)
   const [editandoTitulo, setEditandoTitulo] = useState(false)
   const [novoTitulo, setNovoTitulo] = useState('')
+  const [editandoDescricao, setEditandoDescricao] = useState(false)
+  const [novaDescricao, setNovaDescricao] = useState('')
 
   const recarregar = useCallback(async () => {
     const r = await carregarBolao(id)
@@ -263,6 +272,18 @@ export function BolaoDetalhe() {
     if (r.erro) return setErro(r.erro)
     setEditandoTitulo(false)
     setMensagem('Título atualizado.')
+    await recarregar()
+  }
+
+  async function salvarDescricao(e: React.FormEvent) {
+    e.preventDefault()
+    setOcupado(true)
+    setErro(null)
+    const msg = await definirDescricaoBolao(id, novaDescricao)
+    setOcupado(false)
+    if (msg) return setErro(msg)
+    setEditandoDescricao(false)
+    setMensagem('Descrição atualizada.')
     await recarregar()
   }
 
@@ -327,6 +348,38 @@ export function BolaoDetalhe() {
         )}
       </div>
 
+      <section className="card" style={{ marginBottom: 12 }}>
+        <h2>Descrição</h2>
+        {!editandoDescricao ? (
+          <>
+            <p style={{ whiteSpace: 'pre-line' }} className={bolao.descricao ? undefined : 'muted'}>{bolao.descricao ?? 'Sem descrição.'}</p>
+            <button
+              type="button"
+              className="secundario pequeno"
+              onClick={() => {
+                setNovaDescricao(bolao.descricao ?? '')
+                setErro(null)
+                setEditandoDescricao(true)
+              }}
+            >
+              {bolao.descricao ? 'Editar descrição' : 'Adicionar descrição'}
+            </button>
+          </>
+        ) : (
+          <form onSubmit={(e) => void salvarDescricao(e)}>
+            <label className="campo">
+              <span>Descrição (até 500 letras)</span>
+              <textarea value={novaDescricao} onChange={(e) => setNovaDescricao(e.target.value)} maxLength={500} rows={4} />
+              <small className="muted">Aparece para quem tem o link do bolão e na lista dos apostadores e entra no convite do WhatsApp. Não coloque dados pessoais.{congelado ? ' Com o bolão congelado só o texto muda; fica na Auditoria.' : ''}</small>
+            </label>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" className="primario" disabled={ocupado}>Salvar descrição</button>
+              <button type="button" className="secundario" onClick={() => setEditandoDescricao(false)}>Cancelar</button>
+            </div>
+          </form>
+        )}
+      </section>
+
       <section className="card">
         <ul className="lista-simples">
           <li>Concurso-alvo: <strong>{bolao.concurso_alvo}</strong></li>
@@ -371,7 +424,11 @@ export function BolaoDetalhe() {
         </section>
       )}
 
-      <LinkDoBolao bolaoId={bolao.id} aberto={bolao.status === 'aberto'} />
+      <LinkDoBolao
+        bolaoId={bolao.id}
+        aberto={bolao.status === 'aberto'}
+        convite={{ nome: bolao.nome, descricao: bolao.descricao, concurso: bolao.concurso_alvo, cotaCent: bolao.cota_base_cent, inscricoesAte: bolao.inscricoes_ate }}
+      />
 
       <CotasBolao bolao={bolao} custoCent={totalCent} />
 

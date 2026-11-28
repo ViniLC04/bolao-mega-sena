@@ -64,6 +64,12 @@ Se você fechou cedo demais, clique em **Reabrir as inscrições** (só enquanto
 
 Abra o bolão em **Bolões** e clique em **Mudar título**. Funciona também com o bolão congelado: só o título muda (jogos, recibos e a impressão digital continuam iguais) e a troca fica registrada na **Auditoria** (“título antigo” → “título novo”). Antes de usar, rode uma vez o SQL `supabase/migrations/011_renomear_bolao.sql`.
 
+## 4c. Descrição e convite por WhatsApp
+
+1. **Descrição:** ao criar o bolão aberto há o campo "Descrição" (até 500 letras). Depois, na tela do bolão, use **Editar descrição** (funciona também com o bolão congelado; a troca fica na Auditoria). Ela aparece para quem tem o link do bolão e na lista "Bolões disponíveis" dos apostadores. **Não coloque dados pessoais.**
+2. **Convite:** no cartão "Link público do bolão" (com o link ligado), a seção **Convite por WhatsApp** já traz título, descrição, concurso, valor da cota, prazo e o link. Ajuste o texto se quiser e clique em **Enviar pelo WhatsApp** (escolha o contato ou o grupo) ou **Copiar mensagem**.
+3. Antes de usar, rode uma vez o SQL `supabase/migrations/012_descricao_bolao.sql`.
+
 ## 5. Simulador
 
 1. No menu, abra **Simulador**.
