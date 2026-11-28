@@ -11,6 +11,9 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 - Sem confirmação de e-mail (exigiria serviço de envio): quem criar a conta primeiro "ocupa" aquele e-mail. A conta não vê nada sem o link pessoal secreto.
 - Sem "esqueci a senha" por e-mail: o ADM redefine pelo painel do Supabase.
 
+## Fase 10 (bolões listados) — limites conhecidos
+- Como a conta não tem confirmação de e-mail, qualquer pessoa pode criar conta e ver primeiro nome + cotas dos bolões listados. O ADM decide bolão a bolão.
+
 ## Pendentes
 | # | Pendência | Onde é parâmetro | Status |
 |---|---|---|---|

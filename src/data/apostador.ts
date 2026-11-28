@@ -49,6 +49,25 @@ export async function vincularMinhaConta(tokenPessoal: string): Promise<string |
   return r?.ok ? null : (r?.erro ?? 'Não consegui vincular agora.')
 }
 
+export interface BolaoListado {
+  bolao_id: string
+  nome: string
+  concurso_alvo: number
+  n_cotas: number
+  cota_cent: number
+  cotas_vendidas: number
+  inscricoes_ate: string | null
+  inscricao_aberta: boolean
+  token: string
+}
+
+/** Bolões que o organizador deixou visíveis para quem tem conta (abre em #/b/<token>). */
+export async function carregarBoloesListados(): Promise<{ boloes: BolaoListado[]; erro: string | null }> {
+  const { data, error } = await supabase.rpc('boloes_listados')
+  if (error) return { boloes: [], erro: 'Não consegui carregar a lista de bolões agora.' }
+  return { boloes: (data ?? []) as BolaoListado[], erro: null }
+}
+
 export async function carregarMinhasParticipacoes(): Promise<{ linhas: ParticipacaoDaConta[]; erro: string | null }> {
   const { data, error } = await supabase.rpc('minhas_participacoes')
   if (error) return { linhas: [], erro: 'Não consegui carregar agora. Tente de novo.' }

@@ -247,6 +247,8 @@ export interface LinkDoBolao {
   autoinscricao: boolean
   /** máximo de cotas que uma pessoa pode pedir pelo link */
   max_cotas_pessoa: number
+  /** aparece na lista de bolões das contas de apostador (sem precisar do link) */
+  listado: boolean
 }
 
 export function enderecoDoLinkDoBolao(token: string): string {
@@ -254,7 +256,7 @@ export function enderecoDoLinkDoBolao(token: string): string {
 }
 
 export async function carregarLinkDoBolao(bolaoId: string): Promise<{ link: LinkDoBolao | null; erro: string | null }> {
-  const { data, error } = await supabase.from('bolao_links').select('token, ativo, autoinscricao, max_cotas_pessoa').eq('bolao_id', bolaoId).maybeSingle()
+  const { data, error } = await supabase.from('bolao_links').select('token, ativo, autoinscricao, max_cotas_pessoa, listado').eq('bolao_id', bolaoId).maybeSingle()
   if (error) return { link: null, erro: 'Não consegui ler o link do bolão.' }
   return { link: (data as LinkDoBolao | null) ?? null, erro: null }
 }
@@ -265,7 +267,13 @@ export async function ligarLinkDoBolao(bolaoId: string, atual: LinkDoBolao | nul
   const { error } = await supabase.from('bolao_links').upsert({ bolao_id: bolaoId, token, ativo: true, atualizado_em: new Date().toISOString() })
   return error
     ? { link: null, erro: 'Não consegui ligar o link agora.' }
-    : { link: { token, ativo: true, autoinscricao: atual?.autoinscricao ?? false, max_cotas_pessoa: atual?.max_cotas_pessoa ?? 10 }, erro: null }
+    : { link: { token, ativo: true, autoinscricao: atual?.autoinscricao ?? false, max_cotas_pessoa: atual?.max_cotas_pessoa ?? 10, listado: atual?.listado ?? false }, erro: null }
+}
+
+/** Mostra (ou esconde) o bolão na lista das contas de apostador. */
+export async function definirListado(bolaoId: string, listado: boolean): Promise<string | null> {
+  const { error } = await supabase.from('bolao_links').update({ listado, atualizado_em: new Date().toISOString() }).eq('bolao_id', bolaoId)
+  return error ? 'Não consegui salvar agora.' : null
 }
 
 /** Liga ou desliga a inscrição pelo link e define o máximo de cotas por pessoa. */

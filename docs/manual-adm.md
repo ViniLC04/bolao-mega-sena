@@ -116,6 +116,7 @@ Se você fechou cedo demais, clique em **Reabrir as inscrições** (só enquanto
 2. Com a conta aberta, quem se inscreve em **Quero participar** já tem a inscrição ligada à conta. Quem já tinha um link pessoal abre esse link com a conta aberta e ele é ligado automaticamente. Em **Minha área** a pessoa vê todos os bolões, cotas, pagamento, PIX e jogos.
 3. Um link pessoal só fica com **uma** conta (a primeira que o abriu logada).
 4. **Perdeu o link pessoal?** Em **Participantes** copie o link dela e reenvie. **Esqueceu a senha?** No Supabase: Authentication → Users → clique nos três pontinhos do e-mail → **Send password recovery** não funciona sem e-mail configurado; use **Update user** e defina uma senha nova (passe para a pessoa por WhatsApp).
+5. **Listar um bolão para quem tem conta (sem precisar do link):** abra o bolão, no cartão "Link público do bolão" marque **Listar para apostadores cadastrados**. O bolão aparece em **Minha área → Bolões abertos para participar** (só enquanto aberto e com o link ligado). Quem abre vê o mesmo que o link mostra: primeiro nome e cotas. Como qualquer pessoa pode criar conta, liste só quando isso for aceitável. Para esconder, desmarque a caixa.
 
 ## 10c. Inscrição pelo link, PIX e confirmação de pagamento
 

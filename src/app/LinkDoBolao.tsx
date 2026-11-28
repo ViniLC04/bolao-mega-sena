@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { carregarLinkDoBolao, definirAutoinscricao, desligarLinkDoBolao, enderecoDoLinkDoBolao, ligarLinkDoBolao, type LinkDoBolao as Link } from '../data/boloes'
+import { carregarLinkDoBolao, definirAutoinscricao, definirListado, desligarLinkDoBolao, enderecoDoLinkDoBolao, ligarLinkDoBolao, type LinkDoBolao as Link } from '../data/boloes'
 import { carregarRecebimento } from '../data/recebimento'
 
 /** Cartão do bolão (ADM): liga, copia, renova e desliga o link público do bolão (primeiros nomes e cotas). */
@@ -58,6 +58,17 @@ export function LinkDoBolao({ bolaoId, aberto }: { bolaoId: string; aberto: bool
     setMsg(ligada ? 'Inscrição pelo link ligada.' : 'Inscrição pelo link desligada.')
   }
 
+  async function salvarListado(v: boolean) {
+    setOcupado(true)
+    setErro(null)
+    setMsg(null)
+    const e = await definirListado(bolaoId, v)
+    setOcupado(false)
+    if (e) return setErro(e)
+    setLink((l) => (l ? { ...l, listado: v } : l))
+    setMsg(v ? 'Bolão listado para os apostadores cadastrados.' : 'Bolão escondido da lista.')
+  }
+
   async function desligar() {
     setOcupado(true)
     setErro(null)
@@ -91,6 +102,17 @@ export function LinkDoBolao({ bolaoId, aberto }: { bolaoId: string; aberto: bool
             <button type="button" className="secundario" disabled={ocupado} onClick={() => void desligar()}>
               Desligar
             </button>
+          </div>
+
+          <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--borda)' }}>
+            <h3 style={{ margin: '0 0 4px' }}>Lista para apostadores cadastrados</h3>
+            <p className="muted pequeno">
+              Ligado, qualquer pessoa com conta em “Sou apostador” vê este bolão em <strong>Minha área</strong> e abre sem precisar do link (vê o mesmo que o link mostra: primeiro nome e cotas). Só aparece enquanto o bolão está aberto e o link ligado.
+            </p>
+            <label style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '8px 0' }}>
+              <input type="checkbox" checked={link.listado} disabled={ocupado} onChange={(e) => void salvarListado(e.target.checked)} style={{ width: 20, minHeight: 20 }} />
+              Listar para apostadores cadastrados
+            </label>
           </div>
 
           {aberto && (

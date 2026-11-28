@@ -293,6 +293,8 @@ async function main() {
     if (c.nome.startsWith('PÚBLICO')) {
       const vinc = await chamar(c.headers, 'POST', '/rest/v1/rpc/vincular_minha_conta', { p_token: TOKEN_A })
       const minhas = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
+      const lst = await chamar(c.headers, 'POST', '/rest/v1/rpc/boloes_listados', {})
+      ok(lst.status >= 400, 'listados: visitante sem login não vê a lista', `HTTP ${lst.status}`)
       ok(vinc.status >= 400, 'conta: visitante sem login não vincula', `HTTP ${vinc.status}`)
       ok(minhas.status >= 400, 'conta: visitante sem login não lista participações', `HTTP ${minhas.status}`)
     } else {
@@ -306,6 +308,23 @@ async function main() {
       const lista = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
       const listaJson = json(lista)
       ok(Array.isArray(listaJson) && listaJson.length === 1 && (listaJson[0] as { link_token?: string }).link_token === TOKEN_A, 'conta: lista só a participação vinculada')
+
+      // Bolões listados (Fase 10): só aparecem se o ADM marcou, o link está ativo e o bolão está aberto
+      const temTeste = (r: Resp) => Array.isArray(json(r)) && (json(r) as { bolao_id?: string }[]).some((x) => x.bolao_id === bolaoId)
+      const l0 = await chamar(c.headers, 'POST', '/rest/v1/rpc/boloes_listados', {})
+      ok(l0.status === 200 && !temTeste(l0), 'listados: bolão não marcado não aparece', `HTTP ${l0.status}`)
+      const pAberto = await chamar(SVC_REP, 'PATCH', `/rest/v1/bolaos?id=eq.${bolaoId}`, { status: 'aberto' })
+      await chamar(SVC_REP, 'PATCH', `/rest/v1/bolao_links?bolao_id=eq.${bolaoId}`, { listado: true })
+      const l1 = await chamar(c.headers, 'POST', '/rest/v1/rpc/boloes_listados', {})
+      const l1j = (json(l1) as { bolao_id?: string; token?: string; nome?: string }[] | null) ?? []
+      ok(pAberto.status < 300 && temTeste(l1), 'listados: bolão marcado e aberto aparece', `HTTP ${l1.status} ${l1.texto.slice(0, 80)}`)
+      ok(l1j.find((x) => x.bolao_id === bolaoId)?.token === TOKEN_BOLAO, 'listados: devolve o token para abrir o bolão')
+      ok(!l1.texto.includes(PESSOA) && !l1.texto.includes('rls-teste@contato.secreto'), 'listados: a lista não tem nomes nem contatos')
+      await chamar(SVC_REP, 'PATCH', `/rest/v1/bolao_links?bolao_id=eq.${bolaoId}`, { ativo: false })
+      const l2 = await chamar(c.headers, 'POST', '/rest/v1/rpc/boloes_listados', {})
+      ok(l2.status === 200 && !temTeste(l2), 'listados: link desligado some da lista')
+      await chamar(SVC_REP, 'PATCH', `/rest/v1/bolao_links?bolao_id=eq.${bolaoId}`, { ativo: true, listado: false })
+      await chamar(SVC_REP, 'PATCH', `/rest/v1/bolaos?id=eq.${bolaoId}`, { status: 'rascunho' })
     }
 
     // Fotos de recibo: o armazenamento é privado
