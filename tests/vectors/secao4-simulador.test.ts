@@ -7,11 +7,44 @@ import {
   simularInverso,
   simularPorCotas,
   simularPorValor,
+  tabelaPorCota,
   type PerfilSimulador,
 } from '../../src/engine/simulador'
 import { REGRAS } from './regras-teste'
 
 const comp = (l: { recibos: { g: number; k: number }[] }) => l.recibos.map((o) => `${o.g}x${o.k}`).sort().join('+')
+
+describe('modo 4: tabela por cota fixa', () => {
+  it('cota R$56, N=20: arrecada R$1.120; o máximo em jogos é R$1.092 (sobra R$28)', () => {
+    const l20 = tabelaPorCota(5_600, REGRAS).find((x) => x.n === 20)!
+    expect(l20.arrecadadoCent).toBe(112_000)
+    expect(l20.linha!.gastoCent).toBe(109_200)
+    expect(l20.linha!.caixinhaCent).toBe(2_800)
+  })
+
+  it('cota R$56, N=20: R$1.116 não existe (cada recibo precisa de R$7 por cota, então os totais são múltiplos de R$42); mesmo com mais recibos o máximo é R$1.092', () => {
+    const l20 = tabelaPorCota(5_600, { ...REGRAS, limite_recibos_simulador: 12 }).find((x) => x.n === 20)!
+    expect(l20.linha!.gastoCent).toBe(109_200)
+  })
+
+  it('cobre N de 2 a 100, sobra nunca negativa, gasto múltiplo de R$6 e igual ao modo "por valor"', () => {
+    const t = tabelaPorCota(5_600, REGRAS)
+    expect(t[0].n).toBe(REGRAS.bolao_cotas_min)
+    expect(t[t.length - 1].n).toBe(REGRAS.bolao_cotas_max)
+    for (const x of t) {
+      if (!x.linha) continue
+      expect(x.linha.caixinhaCent).toBeGreaterThanOrEqual(0)
+      expect(x.linha.gastoCent % REGRAS.preco_aposta_simples).toBe(0)
+      expect(x.linha.gastoCent).toBeLessThanOrEqual(x.arrecadadoCent)
+      expect(x.linha.gastoCent).toBe(simularPorValor({ n: x.n, cotaBaseCent: 5_600 }, REGRAS)!.gastoCent)
+    }
+  })
+
+  it('cota inválida devolve tabela vazia', () => {
+    expect(tabelaPorCota(0, REGRAS)).toEqual([])
+    expect(tabelaPorCota(12.5, REGRAS)).toEqual([])
+  })
+})
 
 describe('modo 1: por número de cotas', () => {
   it('N=20: R$168 (4×7dez), cota R$8,40, 28 apostas equivalentes, sem sobra', () => {

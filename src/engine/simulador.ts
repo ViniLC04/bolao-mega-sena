@@ -208,6 +208,27 @@ export function simularPorValor(e: EntradaPorValor, r: ParamsRegras): LinhaSimul
   return montarLinha(e.n, comp, orcamento, e.cobranca ?? 'cota_fixa', e.cotaBaseCent, r)
 }
 
+export interface LinhaTabelaCota {
+  n: number
+  /** N × cota */
+  arrecadadoCent: number
+  /** null quando, com essa arrecadação, não cabe nenhum recibo válido para N */
+  linha: LinhaSimulacao | null
+}
+
+/**
+ * Modo 4: com a cota FIXA escolhida, uma linha para cada N de `bolao_cotas_min` a `bolao_cotas_max`:
+ * arrecadado (N × cota), máximo em jogos (melhor gasto ≤ arrecadado) e sobra (vai para a caixinha).
+ */
+export function tabelaPorCota(cotaBaseCent: number, r: ParamsRegras, perfil: PerfilSimulador = 'menos_recibos'): LinhaTabelaCota[] {
+  if (!Number.isInteger(cotaBaseCent) || cotaBaseCent <= 0) return []
+  const linhas: LinhaTabelaCota[] = []
+  for (let n = r.bolao_cotas_min; n <= r.bolao_cotas_max; n++) {
+    linhas.push({ n, arrecadadoCent: n * cotaBaseCent, linha: simularPorValor({ n, cotaBaseCent, perfil, cobranca: 'cota_fixa' }, r) })
+  }
+  return linhas
+}
+
 export interface ResultadoInverso {
   /** uma linha para cada N viável (do menor para o maior) */
   linhas: LinhaSimulacao[]

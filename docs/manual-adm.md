@@ -63,7 +63,7 @@ Se você fechou cedo demais, clique em **Reabrir as inscrições** (só enquanto
 ## 5. Simulador
 
 1. No menu, abra **Simulador**.
-2. Escolha como pensar: **Por valor** (quanto cada cota custa), **Por nº de cotas** ou **Inverso** (orçamento total).
+2. Escolha como pensar: **Tabela por cota** (você digita o valor da cota, ex.: 56,00, e vê de uma vez 2 a 100 cotas: arrecadado, máximo em jogos e sobra; dá para baixar em CSV e clicar em **Ver** numa linha), **Por valor** (quanto cada cota custa), **Por nº de cotas** ou **Inverso** (orçamento total). Atenção: o máximo em jogos nem sempre é o arrecadado "arredondado para R$ 6", porque cada recibo precisa de pelo menos R$ 7 por cota (ex.: 20 cotas de R$ 56 = R$ 1.120 → máximo R$ 1.092, sobra R$ 28).
 3. Digite os números e veja os recibos, o valor de cada cota, a sobra para a caixinha e as chances.
 4. Clique em **Usar este plano no gerador de jogos**.
 

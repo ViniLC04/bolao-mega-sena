@@ -10,16 +10,19 @@ import {
   simularInverso,
   simularPorCotas,
   simularPorValor,
+  tabelaPorCota,
   type LinhaSimulacao,
+  type LinhaTabelaCota,
   type ModoCobranca,
   type PerfilSimulador,
 } from '../../engine/simulador'
 import { totalMinimo } from '../../engine/bolao'
 import type { EstimativaFaixa } from '../../engine/probabilidades'
 
-type Modo = 'valor' | 'cotas' | 'inverso'
+type Modo = 'valor' | 'cotas' | 'inverso' | 'tabela'
 
 const MODOS: { id: Modo; rotulo: string }[] = [
+  { id: 'tabela', rotulo: 'Tabela por cota' },
   { id: 'valor', rotulo: 'Por valor' },
   { id: 'cotas', rotulo: 'Por nº de cotas' },
   { id: 'inverso', rotulo: 'Inverso (orçamento)' },
@@ -138,11 +141,77 @@ function Resumo({ linha, cotaBaseCent, bolaoId }: { linha: LinhaSimulacao; cotaB
   )
 }
 
+function baixarCsv(tabela: LinhaTabelaCota[], cotaCent: number) {
+  const cab = 'Cotas;Arrecadado (R$);Maximo em jogos (R$);Sobra (R$);Jogos;Composicao;Chance de sena (1 em)'
+  const linhas = tabela.map((t) =>
+    t.linha
+      ? [t.n, formatarReaisCampo(t.arrecadadoCent), formatarReaisCampo(t.linha.gastoCent), formatarReaisCampo(t.linha.caixinhaCent), t.linha.jogos, t.linha.recibos.map(descreverRecibo).join(' + '), t.linha.senaUmEm].join(';')
+      : [t.n, formatarReaisCampo(t.arrecadadoCent), 'nao cabe', '', '', '', ''].join(';'),
+  )
+  const blob = new Blob(['﻿' + [cab, ...linhas].join('\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `tabela-cota-${formatarReaisCampo(cotaCent).replace(',', '-')}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/** Modo 4: com a cota escolhida, o que dá para fazer com cada número de cotas. */
+function TabelaPorCota({ tabela, cotaCent, aoVer }: { tabela: LinhaTabelaCota[]; cotaCent: number; aoVer: (l: LinhaSimulacao) => void }) {
+  const viaveis = tabela.filter((t) => t.linha !== null)
+  const menorSobra = viaveis.length > 0 ? Math.min(...viaveis.map((t) => t.linha!.caixinhaCent)) : null
+  const maiorJogos = viaveis.length > 0 ? Math.max(...viaveis.map((t) => t.linha!.gastoCent)) : null
+  return (
+    <section className="card" style={{ marginTop: 14 }}>
+      <h2>Cota de {formatarReais(cotaCent)}: o que cabe em cada quantidade de cotas</h2>
+      <p className="muted pequeno">
+        Com cota fixa a sobra vai para a caixinha. O máximo em jogos obedece às regras de recibo vigentes (cada recibo precisa de um mínimo por cota), por isso nem sempre chega perto do arrecadado.
+      </p>
+      <p>
+        <button type="button" className="secundario pequeno" onClick={() => baixarCsv(tabela, cotaCent)}>Baixar tabela (CSV)</button>
+      </p>
+      <div className="tabela-rolavel">
+        <table>
+          <thead>
+            <tr><th>Cotas</th><th>Arrecadado</th><th>Máximo em jogos</th><th>Sobra</th><th>Jogos</th><th>Composição</th><th>Sena (1 em)</th><th /></tr>
+          </thead>
+          <tbody>
+            {tabela.map((t) => {
+              const l = t.linha
+              const destaque = l !== null && (l.caixinhaCent === menorSobra || l.gastoCent === maiorJogos)
+              return (
+                <tr key={t.n} style={destaque ? { background: 'color-mix(in srgb, var(--acento) 14%, transparent)' } : undefined}>
+                  <td>{t.n}</td>
+                  <td>{formatarReais(t.arrecadadoCent)}</td>
+                  {l ? (
+                    <>
+                      <td>{formatarReais(l.gastoCent)}{l.gastoCent === maiorJogos && <small className="muted"> · maior valor</small>}</td>
+                      <td>{formatarReais(l.caixinhaCent)}{l.caixinhaCent === 0 ? <small className="muted"> · sem sobra</small> : l.caixinhaCent === menorSobra ? <small className="muted"> · menor sobra</small> : null}</td>
+                      <td>{formatarInteiro(l.jogos)}</td>
+                      <td>{l.recibos.map(descreverRecibo).join(' + ')}</td>
+                      <td>{formatarInteiro(l.senaUmEm)}</td>
+                      <td><button type="button" className="secundario pequeno" onClick={() => aoVer(l)}>Ver</button></td>
+                    </>
+                  ) : (
+                    <td colSpan={6} className="muted">não cabe um recibo válido</td>
+                  )}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  )
+}
+
 export function Simulador() {
   const { params } = useRegras()
   // Vindo de um bolão que fechou as inscrições: N e cota já definidos, simulação já feita
   const previa = (useLocation().state as { previa?: PreviaSimulador } | null)?.previa ?? null
-  const [modo, setModo] = useState<Modo>('valor')
+  const [modo, setModo] = useState<Modo>(previa ? 'valor' : 'tabela')
+  const [tabela, setTabela] = useState<LinhaTabelaCota[] | null>(null)
   const [n, setN] = useState(previa ? String(previa.n) : '20')
   const [cotaBase, setCotaBase] = useState(previa ? formatarReaisCampo(previa.cotaBaseCent) : '100,00')
   const [orcamento, setOrcamento] = useState('840,00')
@@ -163,8 +232,17 @@ export function Simulador() {
     setErro(null)
     setLinhas(null)
     setMaiorN(null)
+    setTabela(null)
     setChave((c) => c + 1)
     const nInt = /^\d+$/.test(n.trim()) ? Number(n.trim()) : NaN
+
+    if (modo === 'tabela') {
+      const base = parseReais(cotaBase)
+      if (base === null || base <= 0) return setErro('Informe o valor da cota em reais (ex.: 56,00).')
+      setTabela(tabelaPorCota(base, params, perfil))
+      setCotaBaseUsada(base)
+      return
+    }
 
     if (modo === 'inverso') {
       const orc = parseReais(orcamento)
@@ -219,7 +297,7 @@ export function Simulador() {
       {!previa && (
         <div className="menu" role="tablist" aria-label="Modo do simulador" style={{ position: 'static', borderRadius: 999, border: '1px solid var(--borda)', marginBottom: 12 }}>
           {MODOS.map((m) => (
-            <a key={m.id} href="#" role="tab" aria-selected={modo === m.id} className={modo === m.id ? 'ativo' : undefined} onClick={(e) => { e.preventDefault(); setModo(m.id); setLinhas(null); setErro(null) }}>
+            <a key={m.id} href="#" role="tab" aria-selected={modo === m.id} className={modo === m.id ? 'ativo' : undefined} onClick={(e) => { e.preventDefault(); setModo(m.id); setLinhas(null); setTabela(null); setErro(null) }}>
               {m.rotulo}
             </a>
           ))}
@@ -234,18 +312,18 @@ export function Simulador() {
         }}
       >
         <div className="campos">
-          {modo !== 'inverso' && (
+          {modo !== 'inverso' && modo !== 'tabela' && (
             <label className="campo">
               <span>Número de cotas (N)</span>
               <input inputMode="numeric" value={n} onChange={(e) => setN(e.target.value)} readOnly={Boolean(previa)} />
               <small className="muted">De {params.bolao_cotas_min} a {params.bolao_cotas_max}</small>
             </label>
           )}
-          {modo === 'valor' && (
+          {(modo === 'valor' || modo === 'tabela') && (
             <label className="campo">
-              <span>Cota-base (R$)</span>
+              <span>{modo === 'tabela' ? 'Valor da cota (R$)' : 'Cota-base (R$)'}</span>
               <input inputMode="decimal" value={cotaBase} onChange={(e) => setCotaBase(e.target.value)} readOnly={Boolean(previa)} />
-              <small className="muted">Arrecadação = N × cota-base</small>
+              <small className="muted">{modo === 'tabela' ? `Mostra todas as quantidades de ${params.bolao_cotas_min} a ${params.bolao_cotas_max} cotas` : 'Arrecadação = N × cota-base'}</small>
             </label>
           )}
           {modo === 'inverso' && (
@@ -279,6 +357,8 @@ export function Simulador() {
         {erro && <p className="erro" role="alert">{erro}</p>}
         <button type="submit" className="primario">Simular</button>
       </form>
+
+      {tabela && <TabelaPorCota tabela={tabela} cotaCent={cotaBaseUsada ?? 0} aoVer={(l) => { setLinhas([l]); setEscolhida(0); setChave((c) => c + 1) }} />}
 
       {linhas && linhas.length > 1 && (
         <section className="card" style={{ marginTop: 14 }}>
