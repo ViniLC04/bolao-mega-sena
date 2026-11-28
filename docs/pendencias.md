@@ -14,6 +14,9 @@ Tudo aqui está implementado como **parâmetro editável** em `rules.json`. Não
 ## Fase 10 (bolões listados) — limites conhecidos
 - Como a conta não tem confirmação de e-mail, qualquer pessoa pode criar conta e ver primeiro nome + cotas dos bolões listados. O ADM decide bolão a bolão.
 
+## Fase 11 (perfil na conta) — limites conhecidos
+- Nome e WhatsApp do perfil ficam em `user_metadata`, que a própria pessoa pode editar (igual a digitar na inscrição); o ADM confere os dados na lista de Participantes.
+
 ## Pendentes
 | # | Pendência | Onde é parâmetro | Status |
 |---|---|---|---|

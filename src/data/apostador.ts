@@ -19,12 +19,50 @@ function traduzir(mensagem: string, status?: number): string {
   return 'Não foi possível agora. Tente de novo em instantes.'
 }
 
-export async function criarConta(email: string, senha: string): Promise<ResultadoConta> {
+/** Nome e WhatsApp guardados no perfil da conta (user_metadata), para não digitar de novo a cada inscrição. */
+export interface PerfilDaConta {
+  nome: string
+  whatsapp: string
+}
+
+/** Confere nome completo e WhatsApp com DDD. Devolve a mensagem de erro ou null. */
+export function validarPerfil(nome: string, whatsapp: string): string | null {
+  const n = nome.trim().replace(/\s+/g, ' ')
+  if (n.length < 5 || !n.includes(' ')) return 'Informe o nome completo (nome e sobrenome).'
+  if (n.length > 80) return 'O nome é longo demais (máximo 80 letras).'
+  let d = whatsapp.replace(/\D/g, '')
+  if (d.length > 11 && d.startsWith('55')) d = d.slice(2)
+  if (d.length < 10 || d.length > 11) return 'Informe o WhatsApp com DDD, por exemplo (11) 91234-5678.'
+  return null
+}
+
+/** Lê o perfil da conta logada (vazio se a conta é antiga e nunca gravou). */
+export function perfilDaConta(user: { user_metadata?: Record<string, unknown> } | null | undefined): PerfilDaConta | null {
+  const m = user?.user_metadata
+  const nome = typeof m?.nome_completo === 'string' ? m.nome_completo : ''
+  const whatsapp = typeof m?.whatsapp === 'string' ? m.whatsapp : ''
+  return nome && whatsapp ? { nome, whatsapp } : null
+}
+
+export async function salvarPerfil(nome: string, whatsapp: string): Promise<string | null> {
+  const erro = validarPerfil(nome, whatsapp)
+  if (erro) return erro
+  const { error } = await supabase.auth.updateUser({ data: { nome_completo: nome.trim().replace(/\s+/g, ' '), whatsapp: whatsapp.trim() } })
+  return error ? 'Não consegui salvar os dados agora. Tente de novo.' : null
+}
+
+export async function criarConta(email: string, senha: string, nome: string, whatsapp: string): Promise<ResultadoConta> {
   const e = email.trim().toLowerCase()
+  const erroPerfil = validarPerfil(nome, whatsapp)
+  if (erroPerfil) return { ok: false, erro: erroPerfil }
   if (!EMAIL.test(e)) return { ok: false, erro: 'Informe um e-mail válido.' }
   const problemas = validarSenha(senha)
   if (problemas.length > 0) return { ok: false, erro: problemas[0] }
-  const { data, error } = await supabase.auth.signUp({ email: e, password: senha })
+  const { data, error } = await supabase.auth.signUp({
+    email: e,
+    password: senha,
+    options: { data: { nome_completo: nome.trim().replace(/\s+/g, ' '), whatsapp: whatsapp.trim() } },
+  })
   if (error) return { ok: false, erro: traduzir(error.message, error.status) }
   // e-mail já existente: o Supabase devolve um usuário "falso" sem identidades e sem sessão
   if (data.user && (data.user.identities?.length ?? 0) === 0) return { ok: false, erro: 'Este e-mail já tem conta. Use “Entrar”.' }

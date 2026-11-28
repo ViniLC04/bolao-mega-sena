@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { vincularMinhaConta } from '../../data/apostador'
+import { perfilDaConta, salvarPerfil, validarPerfil, vincularMinhaConta } from '../../data/apostador'
 import { useAuth } from '../auth'
 import { carregarBolaoPorLink, carregarJogosPorLink, inscreverNoBolao, type JogoPublico, type ParticipanteDoLink, type ResumoBolaoPorLink } from '../../data/publico'
 import { ChancesBolao } from '../ChancesBolao'
@@ -27,8 +27,13 @@ function QueroParticipar({ tokenBolao, resumo }: { tokenBolao: string; resumo: R
   const navigate = useNavigate()
   const { sessao, adm } = useAuth()
   const apostador = !!sessao && !adm
+  const perfil = apostador ? perfilDaConta(sessao?.user) : null
+  const [editando, setEditando] = useState(false)
   const [nome, setNome] = useState('')
   const [zap, setZap] = useState('')
+  const usaPerfil = perfil !== null && !editando
+  const nomeFinal = usaPerfil ? perfil.nome : nome
+  const zapFinal = usaPerfil ? perfil.whatsapp : zap
   const [qtd, setQtd] = useState(1)
   const [ciente, setCiente] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -40,12 +45,17 @@ function QueroParticipar({ tokenBolao, resumo }: { tokenBolao: string; resumo: R
   async function enviar(e: React.FormEvent) {
     e.preventDefault()
     if (!ciente) return setErro('Marque a caixa para confirmar que leu o aviso.')
+    const erroPerfil = validarPerfil(nomeFinal, zapFinal)
+    if (erroPerfil) return setErro(erroPerfil)
     setOcupado(true)
     setErro(null)
-    const r = await inscreverNoBolao(tokenBolao, nome, zap, qtd)
+    const r = await inscreverNoBolao(tokenBolao, nomeFinal, zapFinal, qtd)
     setOcupado(false)
     if (r.erro || !r.token) return setErro(r.erro)
-    if (apostador) await vincularMinhaConta(r.token) // se falhar, o link pessoal continua valendo; dá para vincular depois
+    if (apostador) {
+      await vincularMinhaConta(r.token)
+      if (!usaPerfil) await salvarPerfil(nomeFinal, zapFinal) // guarda na conta para a próxima inscrição
+    } // se falhar, o link pessoal continua valendo; dá para vincular depois
     try {
       localStorage.setItem(chaveMeuLink(tokenBolao), r.token)
     } catch {
@@ -70,15 +80,35 @@ function QueroParticipar({ tokenBolao, resumo }: { tokenBolao: string; resumo: R
         </p>
       )}
       <form onSubmit={(e) => void enviar(e)}>
+        {usaPerfil && (
+          <p>
+            Inscrevendo como <strong>{perfil.nome}</strong> · {perfil.whatsapp}{' '}
+            <button
+              type="button"
+              className="secundario pequeno"
+              onClick={() => {
+                setNome(perfil.nome)
+                setZap(perfil.whatsapp)
+                setEditando(true)
+              }}
+            >
+              Alterar
+            </button>
+          </p>
+        )}
         <div className="campos">
-          <label className="campo">
-            <span>Nome completo</span>
-            <input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" maxLength={80} required />
-          </label>
-          <label className="campo">
-            <span>WhatsApp (com DDD)</span>
-            <input value={zap} onChange={(e) => setZap(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(11) 91234-5678" maxLength={20} required />
-          </label>
+          {!usaPerfil && (
+            <>
+              <label className="campo">
+                <span>Nome completo</span>
+                <input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" maxLength={80} required />
+              </label>
+              <label className="campo">
+                <span>WhatsApp (com DDD)</span>
+                <input value={zap} onChange={(e) => setZap(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(11) 91234-5678" maxLength={20} required />
+              </label>
+            </>
+          )}
           <label className="campo">
             <span>Quantas cotas?</span>
             <select value={qtd} onChange={(e) => setQtd(Number(e.target.value))}>

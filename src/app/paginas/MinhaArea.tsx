@@ -1,9 +1,82 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { carregarBoloesListados, carregarMinhasParticipacoes, type BolaoListado, type ParticipacaoDaConta } from '../../data/apostador'
+import { carregarBoloesListados, carregarMinhasParticipacoes, perfilDaConta, salvarPerfil, type BolaoListado, type ParticipacaoDaConta } from '../../data/apostador'
 import { useAuth } from '../auth'
 import { Cartao } from '../CartaoParticipacao'
 import { formatarDataHoraSP, formatarReais } from '../formato'
+
+function MeusDados({ user }: { user: { user_metadata?: Record<string, unknown> } }) {
+  const perfil = perfilDaConta(user)
+  const [editando, setEditando] = useState(false)
+  const [nome, setNome] = useState('')
+  const [zap, setZap] = useState('')
+  const [erro, setErro] = useState<string | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [ocupado, setOcupado] = useState(false)
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault()
+    setOcupado(true)
+    setErro(null)
+    const r = await salvarPerfil(nome, zap)
+    setOcupado(false)
+    if (r) return setErro(r)
+    setEditando(false)
+    setMsg('Dados salvos.')
+  }
+
+  return (
+    <section className="card" style={{ marginBottom: 12 }}>
+      <h2>Meus dados</h2>
+      {msg && <p className="ok">{msg}</p>}
+      {!editando ? (
+        <p>
+          {perfil ? (
+            <>
+              {perfil.nome} · {perfil.whatsapp}
+            </>
+          ) : (
+            <span className="muted">Ainda não há nome e WhatsApp na conta. Preencha uma vez e você não precisa digitar nas próximas inscrições.</span>
+          )}{' '}
+          <button
+            type="button"
+            className="secundario pequeno"
+            onClick={() => {
+              setNome(perfil?.nome ?? '')
+              setZap(perfil?.whatsapp ?? '')
+              setMsg(null)
+              setEditando(true)
+            }}
+          >
+            {perfil ? 'Editar dados' : 'Preencher'}
+          </button>
+        </p>
+      ) : (
+        <form onSubmit={(e) => void salvar(e)}>
+          <div className="campos">
+            <label className="campo">
+              <span>Nome completo</span>
+              <input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" maxLength={80} required />
+            </label>
+            <label className="campo">
+              <span>WhatsApp (com DDD)</span>
+              <input value={zap} onChange={(e) => setZap(e.target.value)} inputMode="tel" autoComplete="tel" maxLength={20} required />
+            </label>
+          </div>
+          {erro && <p className="erro">{erro}</p>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button type="submit" className="primario" disabled={ocupado}>
+              Salvar
+            </button>
+            <button type="button" className="secundario" onClick={() => setEditando(false)}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+    </section>
+  )
+}
 
 function BoloesParaParticipar({ listados }: { listados: BolaoListado[] }) {
   if (listados.length === 0) return null
@@ -61,6 +134,7 @@ export function MinhaArea() {
           Sair
         </button>
       </p>
+      <MeusDados user={sessao.user} />
       {erro && <p className="erro">{erro}</p>}
       {linhas === null ? (
         <p className="muted">Carregando…</p>

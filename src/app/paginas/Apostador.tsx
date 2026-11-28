@@ -7,6 +7,8 @@ import { useAuth } from '../auth'
 export function Apostador() {
   const { carregando, sessao, adm } = useAuth()
   const [modo, setModo] = useState<'entrar' | 'criar'>('entrar')
+  const [nome, setNome] = useState('')
+  const [zap, setZap] = useState('')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [senha2, setSenha2] = useState('')
@@ -23,7 +25,7 @@ export function Apostador() {
     setAviso(null)
     if (modo === 'criar' && senha !== senha2) return setErro('As duas senhas não são iguais.')
     setOcupado(true)
-    const r = modo === 'criar' ? await criarConta(email, senha) : await entrarApostador(email, senha)
+    const r = modo === 'criar' ? await criarConta(email, senha, nome, zap) : await entrarApostador(email, senha)
     setOcupado(false)
     if (!r.ok) return setErro(r.erro)
     if (r.precisaConfirmar) setAviso('Conta criada. Confirme pelo e-mail que enviamos e depois entre.')
@@ -42,6 +44,19 @@ export function Apostador() {
         </button>
       </div>
       <form className="card" onSubmit={(e) => void enviar(e)}>
+        {modo === 'criar' && (
+          <>
+            <label className="campo">
+              <span>Nome completo</span>
+              <input value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" maxLength={80} required />
+            </label>
+            <label className="campo">
+              <span>WhatsApp (com DDD)</span>
+              <input value={zap} onChange={(e) => setZap(e.target.value)} inputMode="tel" autoComplete="tel" placeholder="(11) 91234-5678" maxLength={20} required />
+            </label>
+            <p className="muted pequeno">Seu nome completo e WhatsApp ficam visíveis só para o organizador e servem para você se inscrever nos bolões sem digitar de novo.</p>
+          </>
+        )}
         <label className="campo">
           <span>E-mail</span>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
