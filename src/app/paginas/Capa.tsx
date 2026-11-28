@@ -51,7 +51,6 @@ export function Capa() {
         )}
         <BotaoLink para="/publico" simbolo="neko" titulo="Acompanhar os bolões" legenda="jogos, cotas e chances" />
         <BotaoLink para="/estatisticas" simbolo="bagua" titulo="Estatísticas" legenda="o que já saiu nos sorteios" />
-        <BotaoLink para="/fontes" simbolo="ferradura" titulo="Fontes dos dados" legenda="de onde vêm os resultados" />
         <button type="button" className="botao-capa" onClick={irParaComoUsar}>
           <Simbolo nome="buda" />
           Como usar
