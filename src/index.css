@@ -89,6 +89,9 @@ a { color: var(--acento); }
 .publico-nav a { padding: 7px 12px; border-radius: 999px; text-decoration: none; color: var(--texto); font-size: 0.93rem; }
 .publico-nav a:hover { background: var(--acento-fundo); }
 .publico-nav a.ativo { background: var(--acento); color: var(--acento-texto); }
+.publico-nav a.botao-apostar { background: var(--acento); color: var(--acento-texto); font-weight: 700; padding: 7px 16px; box-shadow: var(--sombra); }
+.publico-nav a.botao-apostar:hover { background: var(--acento); filter: brightness(1.1); }
+.publico-nav a.botao-apostar.ativo { outline: 2px solid var(--acento-claro); outline-offset: 1px; }
 .publico-rodape { max-width: 960px; margin: 0 auto; padding: 8px 16px 40px; text-align: center; }
 
 /* Blocos */

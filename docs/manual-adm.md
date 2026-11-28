@@ -110,6 +110,13 @@ Se você fechou cedo demais, clique em **Reabrir as inscrições** (só enquanto
 4. Não aparecem sobrenome, contato nem quem já pagou. Se dois participantes tiverem o mesmo primeiro nome, aparecem como "Ana (1)" e "Ana (2)".
 5. **Gerar link novo** troca o endereço (o antigo para de funcionar). **Desligar** tira o acesso. Mande o link só para quem participa.
 
+## 10e. Resumo para explicar no grupo (como apostar)
+1. Abra o site e clique em **Apostar** (no topo ou na capa). Primeira vez: **Criar conta** (nome completo, WhatsApp, e-mail, senha).
+2. Em **Bolões disponíveis** (Minha área), escolha o bolão → **Ver e participar** → cotas → pague pelo PIX e envie o comprovante.
+3. O organizador confirma o pagamento; a pessoa acompanha em **Minha área**.
+4. Quem recebeu um link (do bolão ou pessoal) abre com a conta aberta. Quem só quer olhar usa **Acompanhar os bolões** (sem conta).
+Para um bolão aparecer em "Bolões disponíveis", marque **Listar para apostadores cadastrados** no cartão do link (seção 10d, item 5).
+
 ## 10d. Conta do apostador (histórico das cotas)
 
 1. No menu do site, **Sou apostador** → **Criar conta** (nome completo, WhatsApp, e-mail e senha forte; nome e WhatsApp já vêm preenchidos nas inscrições). Não há confirmação nem recuperação de senha por e-mail.

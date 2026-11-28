@@ -34,7 +34,7 @@ export function Apostador() {
   return (
     <div style={{ maxWidth: 460, margin: '0 auto' }}>
       <h1>Sou apostador</h1>
-      <p className="muted">Entre para ver as suas cotas e os bolões de que você participa.</p>
+      <p className="muted">Entre ou crie a sua conta para escolher um bolão e apostar, e para ver as suas cotas e os bolões de que você participa.</p>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button type="button" className={modo === 'entrar' ? 'primario' : 'secundario'} onClick={() => setModo('entrar')}>
           Entrar

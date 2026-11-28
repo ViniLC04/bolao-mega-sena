@@ -79,11 +79,16 @@ function MeusDados({ user }: { user: { user_metadata?: Record<string, unknown> }
 }
 
 function BoloesParaParticipar({ listados }: { listados: BolaoListado[] }) {
-  if (listados.length === 0) return null
   return (
-    <section className="card" style={{ marginTop: 16 }}>
-      <h2>Bolões abertos para participar</h2>
-      <p className="muted pequeno">Bolões que o organizador deixou visíveis para quem tem conta.</p>
+    <section id="disponiveis" className="card" style={{ marginTop: 16, borderColor: 'var(--acento)', borderWidth: 2 }}>
+      <h2>Bolões disponíveis para apostar</h2>
+      {listados.length === 0 ? (
+        <p className="muted">
+          O organizador ainda não liberou nenhum bolão novo para você. Se recebeu um link de bolão, abra-o com a conta aberta. Volte aqui depois: os bolões liberados aparecem nesta lista.
+        </p>
+      ) : (
+        <p className="muted pequeno">Bolões que o organizador abriu para quem tem conta. Escolha um e clique em “Ver e participar”.</p>
+      )}
       {listados.map((b) => (
         <div key={b.bolao_id} style={{ padding: '8px 0', borderTop: '1px solid var(--borda)' }}>
           <strong>{b.nome}</strong>
@@ -92,7 +97,10 @@ function BoloesParaParticipar({ listados }: { listados: BolaoListado[] }) {
             {b.inscricoes_ate ? ` · inscrições até ${formatarDataHoraSP(b.inscricoes_ate)}` : ''}
             {!b.inscricao_aberta ? ' · inscrições encerradas' : ''}
           </div>
-          <Link to={`/b/${b.token}`}>{b.inscricao_aberta ? 'Ver e participar' : 'Ver o bolão'}</Link>
+          <Link
+            to={`/b/${b.token}`}
+            style={{ display: 'inline-block', marginTop: 6, padding: '8px 16px', borderRadius: 999, background: 'var(--acento)', color: 'var(--acento-texto)', fontWeight: 700, textDecoration: 'none' }}
+          >{b.inscricao_aberta ? 'Ver e participar' : 'Ver o bolão'}</Link>
         </div>
       ))}
     </section>
@@ -134,21 +142,28 @@ export function MinhaArea() {
           Sair
         </button>
       </p>
-      <MeusDados user={sessao.user} />
       {erro && <p className="erro">{erro}</p>}
       {linhas === null ? (
         <p className="muted">Carregando…</p>
-      ) : linhas.length === 0 ? (
-        <section className="card">
-          <p>
-            Você ainda não tem participações nesta conta. Abra o <strong>link do bolão</strong> e clique em “Quero participar”, ou abra o seu <strong>link pessoal</strong> (o que começa com <code>#/p/</code>): ele é ligado à conta automaticamente.
-          </p>
-          <p className="muted pequeno">Perdeu o link pessoal? Peça ao organizador do bolão.</p>
-        </section>
       ) : (
-        linhas.map((l) => <Cartao key={l.bolao_id + l.link_token} l={l} token={l.link_token} aoMudar={() => setVersao((v) => v + 1)} />)
+        <>
+          <BoloesParaParticipar listados={listados.filter((b) => !linhas.some((l) => l.bolao_id === b.bolao_id))} />
+          <h2 style={{ marginTop: 20 }}>Minhas participações</h2>
+          {linhas.length === 0 ? (
+            <section className="card">
+              <p>
+                Você ainda não participa de nenhum bolão. Escolha um em “Bolões disponíveis” acima, ou abra o <strong>link do bolão</strong> ou o seu <strong>link pessoal</strong> (o que começa com <code>#/p/</code>) com a conta aberta: ele é ligado automaticamente.
+              </p>
+              <p className="muted pequeno">Perdeu o link pessoal? Peça ao organizador do bolão.</p>
+            </section>
+          ) : (
+            linhas.map((l) => <Cartao key={l.bolao_id + l.link_token} l={l} token={l.link_token} aoMudar={() => setVersao((v) => v + 1)} />)
+          )}
+        </>
       )}
-      {linhas !== null && <BoloesParaParticipar listados={listados.filter((b) => !linhas.some((l) => l.bolao_id === b.bolao_id))} />}
+      <div style={{ marginTop: 20 }}>
+        <MeusDados user={sessao.user} />
+      </div>
       <p className="muted pequeno" style={{ marginTop: 24 }}>
         <Link to="/publico">Página geral dos bolões</Link>
       </p>

@@ -30,8 +30,8 @@ export function CascaPublica() {
               Fontes
             </NavLink>
             {!adm && (
-              <NavLink to={apostador ? '/minha-area' : '/apostador'} className={classe}>
-                {apostador ? 'Minha área' : 'Sou apostador'}
+              <NavLink to={apostador ? '/minha-area' : '/apostador'} className={({ isActive }) => `botao-apostar${isActive ? ' ativo' : ''}`}>
+                {apostador ? 'Bolões disponíveis' : 'Apostar'}
               </NavLink>
             )}
             <NavLink to={adm ? '/painel' : '/entrar'} className={classe}>
