@@ -293,6 +293,8 @@ async function main() {
     if (c.nome.startsWith('PÚBLICO')) {
       const vinc = await chamar(c.headers, 'POST', '/rest/v1/rpc/vincular_minha_conta', { p_token: TOKEN_A })
       const minhas = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
+      const ren = await chamar(c.headers, 'POST', '/rest/v1/rpc/renomear_bolao', { p_bolao: bolaoId, p_nome: 'Invasor' })
+      ok(ren.status >= 400, 'renomear: visitante sem login não renomeia', `HTTP ${ren.status}`)
       const lst = await chamar(c.headers, 'POST', '/rest/v1/rpc/boloes_listados', {})
       ok(lst.status >= 400, 'listados: visitante sem login não vê a lista', `HTTP ${lst.status}`)
       ok(vinc.status >= 400, 'conta: visitante sem login não vincula', `HTTP ${vinc.status}`)
@@ -308,6 +310,9 @@ async function main() {
       const lista = await chamar(c.headers, 'POST', '/rest/v1/rpc/minhas_participacoes', {})
       const listaJson = json(lista)
       ok(Array.isArray(listaJson) && listaJson.length === 1 && (listaJson[0] as { link_token?: string }).link_token === TOKEN_A, 'conta: lista só a participação vinculada')
+
+      const ren2 = await chamar(c.headers, 'POST', '/rest/v1/rpc/renomear_bolao', { p_bolao: bolaoId, p_nome: 'Invasor' })
+      ok(ren2.status >= 400, 'renomear: conta comum (não ADM) não renomeia', `HTTP ${ren2.status}`)
 
       // Bolões listados (Fase 10): só aparecem se o ADM marcou, o link está ativo e o bolão está aberto
       const temTeste = (r: Resp) => Array.isArray(json(r)) && (json(r) as { bolao_id?: string }[]).some((x) => x.bolao_id === bolaoId)

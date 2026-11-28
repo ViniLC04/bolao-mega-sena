@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { apagarRascunho, carregarBolao, carregarBoloesCongelados, congelarBolao, criarBolaoAberto, listarBoloes, type BolaoLinha, type ReciboDet } from '../../data/boloes'
+import { apagarRascunho, carregarBolao, carregarBoloesCongelados, congelarBolao, criarBolaoAberto, listarBoloes, renomearBolao, type BolaoLinha, type ReciboDet } from '../../data/boloes'
 import { auditarBoloes, type RelatorioAuditoria } from '../../engine/auditoria'
 import { FaseDoBolao } from '../BolaoAberto'
 import { ChanceExpansivel } from '../Chance'
@@ -214,6 +214,8 @@ export function BolaoDetalhe() {
   const [confirmou, setConfirmou] = useState(false)
   const [ocupado, setOcupado] = useState(false)
   const [mensagem, setMensagem] = useState<string | null>(null)
+  const [editandoTitulo, setEditandoTitulo] = useState(false)
+  const [novoTitulo, setNovoTitulo] = useState('')
 
   const recarregar = useCallback(async () => {
     const r = await carregarBolao(id)
@@ -252,6 +254,18 @@ export function BolaoDetalhe() {
     }
   }
 
+  async function salvarTitulo(e: React.FormEvent) {
+    e.preventDefault()
+    setOcupado(true)
+    setErro(null)
+    const r = await renomearBolao(id, novoTitulo)
+    setOcupado(false)
+    if (r.erro) return setErro(r.erro)
+    setEditandoTitulo(false)
+    setMensagem('Título atualizado.')
+    await recarregar()
+  }
+
   async function apagar() {
     if (!window.confirm('Apagar este rascunho? Não dá para desfazer.')) return
     setOcupado(true)
@@ -284,6 +298,34 @@ export function BolaoDetalhe() {
       <h1>
         {bolao.nome} <Status s={bolao.status} />
       </h1>
+      <div style={{ marginBottom: 12 }}>
+        {!editandoTitulo ? (
+          <button
+            type="button"
+            className="secundario pequeno"
+            onClick={() => {
+              setNovoTitulo(bolao.nome)
+              setMensagem(null)
+              setErro(null)
+              setEditandoTitulo(true)
+            }}
+          >
+            Mudar título
+          </button>
+        ) : (
+          <form onSubmit={(e) => void salvarTitulo(e)}>
+            <label className="campo" style={{ maxWidth: 420 }}>
+              <span>Novo título</span>
+              <input value={novoTitulo} onChange={(e) => setNovoTitulo(e.target.value)} maxLength={80} required />
+            </label>
+            {congelado && <p className="muted pequeno">Só o título muda; jogos e impressão digital continuam iguais. A troca fica registrada na Auditoria.</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" className="primario" disabled={ocupado}>Salvar título</button>
+              <button type="button" className="secundario" onClick={() => setEditandoTitulo(false)}>Cancelar</button>
+            </div>
+          </form>
+        )}
+      </div>
 
       <section className="card">
         <ul className="lista-simples">

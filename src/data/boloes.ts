@@ -288,6 +288,14 @@ export async function desligarLinkDoBolao(bolaoId: string): Promise<string | nul
   return error ? 'Não consegui desligar o link agora.' : null
 }
 
+/** Muda só o título do bolão (vale também depois de congelado; a troca vai para a auditoria). Devolve o erro ou null. */
+export async function renomearBolao(bolaoId: string, nome: string): Promise<{ erro: string | null; nome?: string }> {
+  const { data, error } = await supabase.rpc('renomear_bolao', { p_bolao: bolaoId, p_nome: nome })
+  if (error) return { erro: error.message.includes('Acesso negado') ? 'Sem permissão.' : 'Não consegui mudar o título agora. Se acabou de atualizar o site, rode o SQL 011 no Supabase.' }
+  const r = data as { ok: boolean; erro?: string; nome?: string }
+  return r?.ok ? { erro: null, nome: r.nome } : { erro: r?.erro ?? 'Não consegui mudar o título.' }
+}
+
 export interface BolaoCongelado {
   id: string
   nome: string

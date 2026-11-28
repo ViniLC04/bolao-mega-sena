@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { carregarAuditoria, TABELAS_AUDITADAS, type EventoAuditoria } from '../../data/auditoria'
 import { formatarDataHoraSP } from '../formato'
 
-const NOMES_ACAO: Record<string, string> = { INSERT: 'criou', UPDATE: 'alterou', DELETE: 'apagou', CONGELAR: 'congelou' }
+const NOMES_ACAO: Record<string, string> = { INSERT: 'criou', UPDATE: 'alterou', DELETE: 'apagou', CONGELAR: 'congelou', RENOMEAR: 'mudou o título' }
 
 /** O segredo do link pessoal não aparece nem aqui. */
 function semSegredos(d: Record<string, unknown> | null): string {
@@ -15,6 +15,7 @@ function semSegredos(d: Record<string, unknown> | null): string {
 
 function resumo(e: EventoAuditoria): string {
   const d = e.detalhe ?? {}
+  if (e.acao === 'RENOMEAR' && typeof d.de === 'string' && typeof d.para === 'string') return `“${d.de}” → “${d.para}”`
   const nome = typeof d.nome === 'string' ? d.nome : typeof d.chave === 'string' ? d.chave : typeof d.motivo === 'string' ? d.motivo : ''
   return nome
 }

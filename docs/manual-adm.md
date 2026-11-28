@@ -60,6 +60,10 @@ Se você fechou cedo demais, clique em **Reabrir as inscrições** (só enquanto
 3. Concursos que um visitante atualizou aparecem como "Aguardando confirmação". Confira as dezenas com o resultado oficial e clique em **Confirmar** (ou em **Rejeitar**, só para o último, se estiver errado).
 4. Em "Concursos da Mega da Virada", clique em **Sugerir: sorteios de 31/12**, confira a lista e clique em **Gravar lista**.
 
+## 4b. Mudar o título do bolão
+
+Abra o bolão em **Bolões** e clique em **Mudar título**. Funciona também com o bolão congelado: só o título muda (jogos, recibos e a impressão digital continuam iguais) e a troca fica registrada na **Auditoria** (“título antigo” → “título novo”). Antes de usar, rode uma vez o SQL `supabase/migrations/011_renomear_bolao.sql`.
+
 ## 5. Simulador
 
 1. No menu, abra **Simulador**.
